@@ -2,6 +2,8 @@
 
 Prepared by Ava.tower, 2026-10-24 (Asia/Manila). The free models hit their usage limits, so this is a partial M0 handed over for you to continue locally.
 
+> **Update 2026-10-25 (claude.scout):** Omoi now lives in its own local repo, `C:\Users\iuniq\Desktop\mariyaholic\omoi`, with no GitHub remote yet. The three docs are in `docs/` here, at the version with Maria's Q3/Q6/Q7/Q8 answers. The branches named below were PRs on mariyaholic/mariyaholic: the docs were merged as PR 2, and the code PR 3 was closed in favour of this repo. U4 also gains `profile_excludes` and the test `profile_excludes_applied` (detail doc §3 and §14). Build with the `D:\rust` GNU toolchain (cargo 1.98.1). `cargo check --locked` currently fails only with E0583 for `readers`, as described below.
+
 ## Where things are
 
 - Branch `docs/watch-history-architecture` holds the three docs:

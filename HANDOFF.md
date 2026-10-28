@@ -2,16 +2,18 @@
 
 Prepared by Ava.tower, 2026-10-24 (Asia/Manila). The free models hit their usage limits, so this is a partial M0 handed over for you to continue locally.
 
-> **Update 2026-10-25 (claude.scout):** Omoi now lives in its own local repo, `C:\Users\iuniq\Desktop\mariyaholic\omoi`, with no GitHub remote yet. The three docs are in `docs/` here, at the version with Maria's Q3/Q6/Q7/Q8 answers. The branches named below were PRs on mariyaholic/mariyaholic: the docs were merged as PR 2, and the code PR 3 was closed in favour of this repo. U4 also gains `profile_excludes` and the test `profile_excludes_applied` (detail doc §3 and §14). Build with the `D:\rust` GNU toolchain (cargo 1.98.1). `cargo check --locked` currently fails only with E0583 for `readers`, as described below.
+> **Update 2026-10-28 (claude.scout):** Omoi lives in its own local repo with no GitHub remote yet. The docs carry Maria's Q3/Q6/Q7/Q8 answers (2026-10-25) and the conflicts between them are resolved (see the Reconciliation note in the architecture draft; two small decisions are recorded there and in detail §8 and §13). Two newly decided points a builder will meet: M3 sessionizing runs inside `omoi collect`, and the M1 UI is delete-only (tags are M4). U4 also gains `profile_excludes` and the test `profile_excludes_applied` (detail doc §3 and §14). Build with the `D:\rust` GNU toolchain (cargo 1.98.1). `cargo check --locked` currently fails only with E0583 for `readers`, as described below.
 
 ## Where things are
 
-- Branch `docs/watch-history-architecture` holds the three docs:
-  - `docs/watch-history-architecture.md`: draft 2, renamed to Omoi, with Maria's decisions in §0.
-  - `docs/omoi-design-review.md`: the Ava.tower review.
-  - `docs/omoi-architecture-detail.md`: the M0 build contract by Astra (gpt-6-astra).
-- Branch `feat/omoi-m0` (off the docs branch) holds the code (this folder). It is **partial and does not build yet** (see below).
-- `omoi-box.bundle` is a git bundle of the box history for both branches, kept for audit.
+Everything is in this repo, `C:\Users\iuniq\Desktop\mariyaholic\omoi` (local, no remote), on `main`:
+
+- `docs/watch-history-architecture.md`: draft 2, renamed to Omoi, with Maria's decisions in §0. Its "Reconciliation note" says where the detail doc governs.
+- `docs/omoi-design-review.md`: the Ava.tower review.
+- `docs/omoi-architecture-detail.md`: the M0 build contract by Astra (gpt-6-astra). **This is the document to build from.**
+- `ARCHITECTURE.md`: module map, process model and budgets in one place. `FEATURES.md`: 49 features with milestone, state and the tests that verify them.
+- The code is **partial and does not build yet** (see below).
+- The box's `omoi-box.bundle` audit bundle is not in this repo.
 
 ## Done
 
@@ -113,7 +115,7 @@ Integration gate: `cargo test --all-targets` must be green on Linux and on Windo
 ## Build and test on Windows (D:\rust GNU toolchain; MSVC link is broken)
 
 ```powershell
-cd C:\Users\iuniq\Desktop\omoi
+cd C:\Users\iuniq\Desktop\mariyaholic\omoi
 # use the GNU toolchain from D:\rust (MinGW gcc/ar must be on PATH for bundled SQLite)
 rustup toolchain list                      # expect stable-x86_64-pc-windows-gnu
 rustup override set stable-x86_64-pc-windows-gnu
@@ -123,7 +125,7 @@ cargo build --release --bins               # target omoi.exe <= 6,000,000 bytes
 ```
 
 Notes:
-- Use rustc 1.88 or newer. The `url` → `idna` → `icu_*` dependency chain needs it, and 1.85 fails. The box tested with 1.99.1.
+- Use rustc 1.88 or newer. The `url` → `idna` → `icu_*` dependency chain needs it, and 1.85 fails. The box tested with 1.99.1; the local `D:\rust` toolchain is cargo/rustc 1.98.1, which also satisfies it.
 - Don't install or use the MSVC toolchain.
 - Windows-only code (Task Scheduler, `omoiw.exe`) sits behind `#[cfg(windows)]`, with Linux stubs that return `Unsupported`.
 

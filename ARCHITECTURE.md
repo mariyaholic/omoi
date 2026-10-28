@@ -38,7 +38,7 @@ omoi ui       (M1, on demand)
 | Process | Lifetime | Memory budget | CPU budget | DB access |
 |---|---|---|---|---|
 | `omoi collect` (also `omoiw.exe`, windowless) | One run, then exits. Task Scheduler hourly and at logon, "run only when user is logged on" | 0 between runs. Lifetime peak under 30,000,000 bytes, including a full import | Processing under 1 s per warm run (wall and CPU). Copy time reported separately (F6) | Writes `items`, `views`, `checkpoints` and FTS in one `BEGIN IMMEDIATE` transaction. A busy writer exits 4. Reads browser copies only, never the live file |
-| `omoi listen` (optional, M3) | Resident from logon. Off means no time tracking | 10,000,000 bytes working set or less | About 0 % when idle. Event-driven, no polling. Core-seconds reported over one hour of playback | Appends to `raw_events` (inbox). Which process turns inbox rows into `sessions` is unspecified in docs |
+| `omoi listen` (optional, M3) | Resident from logon. Off means no time tracking | 10,000,000 bytes working set or less | About 0 % when idle. Event-driven, no polling. Core-seconds reported over one hour of playback | Appends to `raw_events` (inbox). `omoi collect` turns inbox rows into `sessions` in its own transaction; the listener never writes `sessions` (decided 2026-10-28) |
 | `omoi ui` (M1) | On demand. Opens the browser. Exits after 10 min idle | Unspecified in docs | Unspecified in docs. Page load target under 200 ms at 10k items | Read-only connection (`query_only`). Writes only delete and tag transactions, each with a per-launch token |
 
 Userscripts run inside the browser, not as a process. They send events to the listener through `GM_xmlhttpRequest`.
@@ -88,7 +88,7 @@ Not in the §1 layout, so their files are unspecified in docs: the M1 UI page, t
 3. Reader: `readers/chromium.rs` or `readers/firefox.rs` reads bounded batches of at most `reader_batch_rows`, using the `(time, id)` tuple cursor. Chromium time is µs since 1601. Firefox time is µs since 1970.
 4. Normalize: `normalize.rs` maps a URL to `(platform, external_id)` or `None`. It is pure and makes no network calls.
 5. Dedupe: `dedupe.rs` `ingest()`, called by `collect.rs` inside one `BEGIN IMMEDIATE` transaction. Fixed-anchor 1,800 s window. Richest metadata kept. Approximate duration takes the max and is never summed.
-6. Sessionize: `sessionize.rs`. In M0 it is a stub that returns `NotImplemented`, and collect never calls it. The M3 contract (300 s gap rule, provenance) is in detail §8.
+6. Sessionize: `sessionize.rs`. In M0 it is a stub that returns `NotImplemented`, and collect never calls it. The M3 contract (300 s gap rule, provenance) is in detail §8. In M3 `collect.rs` is the caller, inside the same transaction.
 7. Enrich: module unspecified in docs. M4 (YouTube Data API, TMDB, Twitch Helix, oEmbed). No enrichment in M0.
 8. Tag: module unspecified in docs. M4 layered rules, API results and channel tags (draft 2 §7). No tagging in M0.
 
@@ -133,11 +133,14 @@ Schema version is `PRAGMA user_version`. Migration 0001 sets it to 1. A newer ve
 |---|---|---|---|
 | 2026-10-25 | Q3: S4 yt-dlp with Firefox cookies | Off | Not scheduled in any milestone |
 | 2026-10-25 | Q6: Bilibili position | Moved after Twitch. Order: YouTube, Netflix, Twitch, Bilibili, Prime Video, Disney+, Crunchyroll | Sets M3 userscript order and M4 enrichment order. Overrides review §3 and §6 |
-| 2026-10-25 | Q7: thumbnail cache cap | 100 MB (`thumb_cache_bytes = 100000000`), LRU by last view | Overrides the 250 MB proposal in review §3 and §6. The 250000000 value in detail §11 example JSON is stale |
+| 2026-10-25 | Q7: thumbnail cache cap | 100 MB (`thumb_cache_bytes = 100000000`), LRU by last view | Overrides the 250 MB proposal in review §3 and §6. The stale 250000000 in the detail §11 example JSON was corrected on 2026-10-28 |
 | 2026-10-25 | Q8: browser profiles | All discovered profiles, minus `profile_excludes` | M0 config key. An unmatched exclude entry warns only |
 | 2026-10-24 (applied in draft 2 §11) | F1: listener Origin rule | Platform Origin allowlist withdrawn. Reject any web-page Origin (http, https, null). Accept no Origin or an explicit extension origin. Userscripts use `GM_xmlhttpRequest` | Detail §13 is the M3 contract. Origin is defense in depth, not authentication |
 | 2026-10-24 | Q1, Q2, Q4, Q5 | Top platforms by users; PC-only; thumbnails only after the M1.5 measurement; name Omoi | Scope and naming: `omoi.exe`, `%LOCALAPPDATA%\omoi\`, task folder `\Omoi\` |
 | 2026-10-24 | Build contract | Detail doc governs where draft 2 differs: schema (detail §4, not draft 2 §4), dedupe (fixed anchor, not "within 30 min" chaining, detail §7), crate list (no tiny_http or ureq in M0, detail §1) | Build from detail §1, §4, §7 |
+| 2026-10-28 | M3 sessionizer caller | `omoi collect` runs `sessionize::run` inside its `BEGIN IMMEDIATE` transaction over listener-appended `raw_events` | Listener stays append-only. Revisit at M3 (detail §8) |
+| 2026-10-28 | Tags in M1 | M1 UI is delete-only; tag writes arrive with the tagging UI in M4 | Detail §13 M1 row edited |
+| 2026-10-28 | M1.5 gate | Cache ships only if the projection is at most 100 MB; otherwise it stays disabled until Maria decides on a bounded LRU cache | Draft 2 §14 wording aligned to detail §11 |
 
 ## 8. Budgets
 
@@ -171,4 +174,4 @@ Schema version is `PRAGMA user_version`. Migration 0001 sets it to 1. A newer ve
 - `docs/watch-history-architecture.md`: §0 decisions (the overrides above); §1 budgets; §2 sources (S1-S8); §3 components; §9 scheduling; §11 privacy and listener; §12 URL patterns (superseded in detail §6); §14 milestones. §15 has no open questions.
 - `docs/omoi-architecture-detail.md`: §1 crate layout and manifest; §2 CLI and exit codes; §3 paths and config subset; §4 schema 0001 and migration; §5 reader contracts and snapshot protocol; §6 normalizer and vectors; §7 dedupe and collect transaction; §8 sessionization (M3); §9 errors and logs; §10 Task Scheduler; §11 M1.5 thumbnail measurement; §12 resource gates; §13 M1-M3 outline and listener security; §14 units U1-U14 with acceptance tests.
 - `docs/omoi-design-review.md`: §1 findings F1-F8; §2 claim spot-check; §3 source matrix and budgets; §4.1 listener gaps; §6 questions Q6-Q8 and answers.
-- `HANDOFF.md`: "Done" table (U1 partial); "Remaining units" (U2-U14, same acceptance tests as detail §14); "Build and test on Windows"; free-model continuation rules. Its build path (`C:\Users\iuniq\Desktop\omoi`) is stale. The repo is at `C:\Users\iuniq\Desktop\mariyaholic\omoi`.
+- `HANDOFF.md`: "Done" table (U1 partial); "Remaining units" (U2-U14, same acceptance tests as detail §14); "Build and test on Windows"; free-model continuation rules. Updated 2026-10-28 to the local repo path `C:\Users\iuniq\Desktop\mariyaholic\omoi`.

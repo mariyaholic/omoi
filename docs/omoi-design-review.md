@@ -61,7 +61,7 @@ The other findings are schema gaps and one scheduling setting. None of them chan
 - **Disk.** Per 100k views: views ~40 B + the UNIQUE index ~35 B ≈ 7.5 MB. Assuming ~40k distinct items: ~200 B
   + ~100 B FTS + unique index ≈ 13 MB. Total ≈ 21 MB, under 30 MB with little margin, so measure in M0.
 - **Thumbnails** (Maria Q4). M1.5 is now a measuring step. YouTube `mqdefault.jpg` (320×180) is usually
-  ~10–20 KB, so 40k items ≈ 0.4–0.8 GB. That's why the default cap is 250 MB, with LRU eviction by last view. The
+  ~10–20 KB, so 40k items ≈ 0.4–0.8 GB. That's why the default cap was proposed at 250 MB (Maria chose 100 MB on 2026-10-25), with LRU eviction by last view. The
   test downloads 500, stops at a 50 MB hard cap, and extrapolates per platform.
 - **CPU.** See F6. Hourly copies of large `History` files are the only real cost. Skip unchanged files.
 
@@ -108,7 +108,7 @@ behind `cfg(windows)` with Linux stubs so `cargo test` runs anywhere. M0 has no 
 ## 6. New questions for Maria
 
 - **Q6.** Keep Bilibili at #2 (ordered by global users) or move it after Twitch?
-- **Q7.** Is a 250 MB cap for the thumbnail cache acceptable, pending the M1.5 measurement?
+- **Q7.** Is a 250 MB cap for the thumbnail cache acceptable, pending the M1.5 measurement? *(Answered: 100 MB.)*
 - **Q8.** Should M0 read every Chromium-family and Firefox profile it finds, or a named list?
 - **Q3, still open.** S4 yt-dlp with Firefox cookies. It stays off until you decide.
 

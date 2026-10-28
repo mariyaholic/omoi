@@ -497,7 +497,7 @@ Dedupe vectors (same item unless stated; seconds relative to an arbitrary valid 
 
 ## 8. Sessionization (M3 contract; M0 stub)
 
-M0 `sessionize::available() -> bool` returns false and `sessionize::run() -> Result<()>` returns `Error::NotImplemented("M3 sessionize")`; collect never calls it. Schema existence does not imply playback measurement.
+M0 `sessionize::available() -> bool` returns false and `sessionize::run() -> Result<()>` returns `Error::NotImplemented("M3 sessionize")`; collect never calls it in M0. Schema existence does not imply playback measurement. **M3 caller (decided 2026-10-28):** `omoi collect` runs `sessionize::run` inside its single `BEGIN IMMEDIATE` transaction, consuming the `raw_events` the listener appended and deleting each processed row in the transaction that commits its sessions; the listener only appends and never writes `sessions`. Revisit at M3.
 
 M3 types: `PlaybackEvent { event_id, producer_id, seq, item_key, source, at_ms, state, position_ms, cumulative_played_ms }`. Use event IDs plus producer/sequence for durable retry idempotence in a new migration. Userscript accumulates **actual playing elapsed time** with a monotonic clock, including playback rate but excluding pause/buffering/seek jumps; it sends on player events and throttled `timeupdate` callbacks, not listener polling. SMTC uses playback-state events plus timestamped timeline samples. Confirmed adjacent sample intervals only; absent telemetry is not assumed playback.
 
@@ -634,7 +634,7 @@ Example output (one-platform catalogue, all arithmetic consistent):
   "failed": 0,
   "unsupported": 0,
   "test_cap_bytes": 50000000,
-  "cache_cap_bytes": 250000000,
+  "cache_cap_bytes": 100000000,
   "test_bytes_before": 0,
   "downloaded_bytes": 7500000,
   "test_bytes_after": 7500000,
@@ -691,7 +691,7 @@ M0 final acceptance: Maria's retained week imports; rerun inserts zero; every so
 
 | Milestone | Concrete scope and boundaries |
 |---|---|
-| M1 | `omoi ui`: on-demand loopback server, single static page, timeline, FTS search, platform/channel filters and paginated SQL (50 rows/page). Ten-minute idle exit, no polling resident service. Use standard library bounded HTTP parsing/IO initially or revisit dependency budget explicitly. Per-launch OS-random token in initial URL, immediately remove from address/history with replaceState; keep only in page memory and require it on each mutation, exact loopback Host and same-origin checks. Read-only otherwise. Send restrictive CSP/referrer policy; no remote assets. Escape titles, parameterize FTS inputs; provide literal search mode. Delete/tag transactions keep FTS synchronized. Token is separate from listener token. |
+| M1 | `omoi ui`: on-demand loopback server, single static page, timeline, FTS search, platform/channel filters and paginated SQL (50 rows/page). Ten-minute idle exit, no polling resident service. Use standard library bounded HTTP parsing/IO initially or revisit dependency budget explicitly. Per-launch OS-random token in initial URL, immediately remove from address/history with replaceState; keep only in page memory and require it on each mutation, exact loopback Host and same-origin checks. Read-only otherwise. Send restrictive CSP/referrer policy; no remote assets. Escape titles, parameterize FTS inputs; provide literal search mode. Delete transactions keep FTS synchronized; tag writes arrive with the tagging UI in M4 (decided 2026-10-28). Token is separate from listener token. |
 | M1.5 | Perform §11 measurement; retain report/files for Maria. Offline thumbnails remain disabled until measured gate passes. No enrichment implied by thumbnail experiment. |
 | M2 S6 | `omoi import netflix --csv PATH` plus configured hourly drop-folder scan. Header-driven CSV adapter, exact format/version fixtures. Standard viewing-activity exports may have **only Title and Date**: do not assume duration or stable ID from the draft's S6 shorthand. Parse duration/device only when actually present and specified units are known. Match title/date only when unique; otherwise pending imported identity (`netflix`, `csv:<escaped-title>:<date>`) with low-confidence date precision in a new migration. Never fabricate a Netflix watch ID or midnight exact watch time; reconcile provisional entries only with unique evidence. File progress/idempotence by recorded file stamp plus stable row key; explicit review on ambiguous matches. |
 | M2 S8 | mpv watch_later and VLC recent files are evidence of open/resume, not proof of completion; handle mpv hashed filenames only when associated path metadata is available. Reuse local file normalization, record source/provenance and available progress. Read via snapshots and bounded scans; no watcher. Jellyfin/Plex are opt-in server adapters with credentials in Credential Manager and network permissions explicitly configured, not assumed local-only traffic. New migrations store server item IDs and mapping confidence. |

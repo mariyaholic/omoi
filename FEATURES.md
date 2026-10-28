@@ -1,6 +1,6 @@
 # Omoi: feature catalogue
 
-*Design only. Nothing shipped. Date: 2026-10-28. Built only from the Omoi docs. Code status is from HANDOFF.md (2026-10-25): U1 partial, U2 to U14 not started.*
+*Design only. Nothing shipped. Date: 2026-10-28; source-doc conflicts resolved the same day (see Open items). Built only from the Omoi docs. Code status is from HANDOFF.md (2026-10-25): U1 partial, U2 to U14 not started.*
 
 Omoi is a PC-only, local watch-history app. The hourly collector exits after each run. The listener is optional.
 
@@ -48,14 +48,14 @@ State values: **specified** (contract written), **partial** (some code exists), 
 | F13 | Dry run: `omoi collect --dry-run` | M0 | detail §2 | specified | clones DB to a temp file; browser copies as F08 | `collect_dry_run` (U13) |
 | F14 | SQLite schema 0001, migrations, FTS5 check, `omoi db info` | M0 | arch §4; detail §4 | specified | items about 200 B, views about 40 B, sessions about 40 B, FTS about 100 B per item | `migration_0001_idempotent`, `migration_rollback`, `reject_future_schema`, `required_columns`, `foreign_key_cascade` (U3) |
 | F15 | CSV export, one row per deduped view | M0 | arch §14 M0; detail §2 | specified | streamed, no Vec of rows | `csv_escaping`, `export_one_row_per_view`, `export_no_clobber`, `export_streaming` (U10) |
-| F16 | JSON export, streamed array | M0 | detail §2 | specified | streamed | `json_null_and_order` (U10). Arch §14 lists CSV only; see Source conflicts |
+| F16 | JSON export, streamed array | M0 | detail §2 | specified | streamed | `json_null_and_order` (U10) |
 | F17 | Bounded JSONL logs: no URLs, titles or tokens in records | M0 | detail §9 | specified | at most 3 MiB on disk; 4 KiB per record | `logs_global_cap`, `logs_redact_and_truncate`, `log_lock_fallback`, `dry_run_no_log_files` (U11) |
 | F18 | Hourly `collect` in Task Scheduler (`\Omoi\Collect`): hourly and at logon, logged-on users only, hidden, below-normal priority | M0 | arch §9; detail §10 (F2) | specified | 10-minute cap; skipped on battery; no resident process | `schedule_xml_contract`, `schedule_escapes_paths`, `schedule_argv_no_shell`, `schedule_linux_stub` (U12); Windows smoke test by hand |
 | F19 | Idempotent re-run: a second run adds 0 items and 0 views | M0 | arch §14 M0; detail §7, §14 | specified | none | `collect_week_idempotent`, `synthetic_counts` (U13, U14); Maria's real week at M0 exit |
 | F20 | Timeline UI: `omoi ui` on demand, 127.0.0.1 only, 50 rows per page, exits after 10 min idle | M1 | arch §3, §14; detail §13 | specified | RAM unspecified; no resident process | M1 exit: page load under 200 ms at 10k items. No named test |
 | F21 | Full-text search: FTS5, literal mode, parameterized inputs | M1 | arch §4, §14; detail §13 | specified | FTS inside the 30 MB catalogue budget | `fts_insert_update_delete` (U3); real MATCH queries per detail §4 |
 | F22 | Per-platform and per-channel views and filters | M1 | arch §14; detail §13 | specified | paginated SQL | M1 exit (page load). No named test |
-| F23 | Delete controls: per item, per platform, or everything; FTS kept in sync | M1 | arch §11; detail §13 | specified | none | `foreign_key_cascade`, `fts_insert_update_delete` (U3) |
+| F23 | Delete controls (the only write in the M1 UI): per item, per platform, or everything; FTS kept in sync | M1 | arch §11; detail §13 | specified | none | `foreign_key_cascade`, `fts_insert_update_delete` (U3) |
 | F24 | Thumbnail disk-use test: `omoi thumbs --measure --limit 500`, YouTube `mqdefault.jpg` | M1.5 | arch §0 Q4, §14; detail §11 | specified | 50,000,000 bytes hard stop; sequential; 5 s connect and 15 s total deadlines | Report `thumbs-measure.json`; fake-chunk test at 49,999,999 bytes (detail §11). No U-unit |
 | F25 | Thumbnail cache: capped, LRU by last view | M1.5, only if the gate passes | arch §0 Q7, §14; detail §11 | specified, conditional on F24 | cap 100,000,000 bytes by default, configurable | Gate in detail §11. No named test |
 | F26 | Netflix CSV import (S6), with an hourly drop-folder scan | M2 | arch §2 S6; detail §13 | specified | none | Header-driven fixtures (detail §13). M2 exit: Netflix items visible, no duplicates against S1 |
@@ -64,7 +64,7 @@ State values: **specified** (contract written), **partial** (some code exists), 
 | F29 | Google Takeout backfill (S5), import of zip from a Drive folder | M2, optional | arch §2 S5, §9; detail §13 | optional | ZIP support needs a separate dependency decision (detail §13) | Idempotent by file hash (arch §9). No named test |
 | F30 | Time spent from userscripts (S3): played seconds, buffered in GM storage | M3 | arch §2 S3, §6; detail §8 | specified | throttled `timeupdate` only; no polling | Session vectors in detail §8 (7 rows) |
 | F31 | Time spent from Windows media session (S2, SMTC) | M3 | arch §2 S2, §5; detail §8 | specified | event subscription only | Session vectors in detail §8 (SMTC rules). M3 exit: listener CPU about 0 % over 1 h |
-| F32 | Sessions table and sessionizer: gap over 300 s closes a session | M3 | arch §5, §8; detail §8 | specified | durable open-session state; M0 stub returns NotImplemented | `sessionize_m0_stub` (U13); session vectors in detail §8 |
+| F32 | Sessions table and sessionizer: gap over 300 s closes a session | M3 | arch §5, §8; detail §8 | specified | durable open-session state; run by `omoi collect` in its own transaction (decided 2026-10-28); M0 stub returns NotImplemented | `sessionize_m0_stub` (U13); session vectors in detail §8 |
 | F33 | Localhost listener: `POST /event` on 127.0.0.1:43821 with a token | M3 | arch §11; detail §3, §13 | specified | at most 10,000,000 bytes working set; body 16,384 bytes | Hostile Host and Origin, missing token, oversized or slow request, full inbox, repeated event ID, port collision. Pure validators (detail §13) |
 | F34 | `omoi listen` at logon, opt-in, separate from the hourly task | M3 | arch §9; detail §13 | specified | the only resident process | M3 exit. No named test |
 | F35 | Interval-aware time totals with provenance; the UI never adds overlapping tiers | M3 | detail §8 | specified | none | Session vector: userscript [0,60] and SMTC [0,60] give two rows, UI total 60 |
@@ -74,7 +74,7 @@ State values: **specified** (contract written), **partial** (some code exists), 
 | F39 | TMDB enrichment: genres (recommendations in F47) | M4 | arch §7 | specified | paginated, 20 per page; about 40 to 50 requests per second; back off on 429; attribution in the UI (review §2) | None named |
 | F40 | Twitch Helix enrichment: VOD and game category | M4 | arch §7; review §2 | specified | Client-Id plus app token; client secret in Credential Manager; VODs expire, so enrich promptly | None named |
 | F41 | YouTube oEmbed title fallback | M4 | arch §7 | specified | no key; one request per item | None named |
-| F42 | Item tags: rule, api or user, with source per tag | M4 | arch §4, §7 | specified | `item_tags` rows | None named. Tag UI milestone conflicts; see Open items |
+| F42 | Item tags: rule, api or user, with source per tag | M4 | arch §4, §7 | specified | `item_tags` rows | None named. Tag writes come with the M4 tagging UI; the M1 UI is delete-only |
 | F43 | Channel tags: tag a channel once, items inherit | M4 | arch §7; detail §4 | specified | `channel_tags` rows | M4 exit (category coverage). No direct test |
 | F44 | Shelf: Continue watching (max position 10 to 90 % of duration) | M5 | arch §8 | specified | SQL only; needs F32 | M5 exit: all six shelves populated from real data |
 | F45 | Shelf: New from your channels (YouTube RSS, top 30 channels, unseen items) | M5 | arch §8; review F3 | specified | one RSS request per channel per day; 15 newest per feed; needs `channel_id` from F38 | M5 exit. Daily job milestone unspecified |
@@ -131,7 +131,7 @@ Rules:
 
 | Item | Decision | Reason (from docs) | Date |
 |---|---|---|---|
-| S4: yt-dlp with Firefox cookies (YouTube account history, including phone and TV) | Off by decision, not in M0 to M3 | Uses Maria's login cookies. Terms-of-service grey zone. Nothing in the core path may depend on it. Chrome cookie encryption makes Firefox the only option | 2026-10-25 (arch §0 Q3 and §15). Arch §2 note says 2026-10-24; see Source conflicts |
+| S4: yt-dlp with Firefox cookies (YouTube account history, including phone and TV) | Off by decision, not in M0 to M3 | Uses Maria's login cookies. Terms-of-service grey zone. Nothing in the core path may depend on it. Chrome cookie encryption makes Firefox the only option | 2026-10-25 (arch §0 Q3, §2 and §15) |
 | S5: Google Takeout export (F29) | Optional, M2 only if Maria asks | Mainly a one-time backfill for a PC-only app | Scope set 2026-10-24 (arch §0 Q2) |
 | Phone and TV sources | Out of scope | Omoi is a PC app. The `views.device` column stays, but is almost always `pc` | 2026-10-24 (arch §0 Q2) |
 | Jellyfin and Plex (F28) | Opt-in adapters | Network traffic must be configured, not assumed local | detail §13 (no date) |
@@ -183,21 +183,16 @@ Unspecified in docs:
 - Thumbnail URLs for platforms other than YouTube. Arch §0 requires documented provider URLs first.
 - RAM budget for `omoi ui`.
 - Twitch credentials contract: review §2 adds a client secret and token refresh, but no M4 contract covers them.
-- Netflix CSV columns and format versions beyond Title and Date (detail §13).
+- Netflix CSV columns and format versions beyond Title and Date (detail §13). Arch §2 S6 now treats duration and device as present only if the export carries them.
 - Userscript manager behaviour for `Origin` headers. Detail §13 says to test the real manager before release. No result is recorded.
 - Chromium `-journal` copy claim is unverified (review §2).
 - Measurements: no numbers exist for any budget. Windows smoke tests have not run (detail §12).
 
-Source conflicts, and the reading this file uses:
-- Thumbnail cap: arch §0 Q7 and detail §11 text say 100,000,000 bytes. Review §3 and its Q7 say 250 MB. Detail §11 example JSON shows `cache_cap_bytes: 250000000`. This file uses 100 MB.
-- M1.5 fallback: arch §14 says ship if the cache is "still useful with LRU at that cap". Detail §11 says keep disabled or propose a bounded LRU cache separately. This file lists the arch wording as the M1.5 gate and notes the detail wording.
-- Binary layout: arch §3 says one binary with subcommands, built with the Windows subsystem. Detail §10 uses a separate `omoiw.exe` helper. This file follows detail §10.
-- HTTP: arch §3 names `tiny_http` and `ureq`. Detail §1 forbids HTTP dependencies in M0 and detail §11 uses WinHTTP for M1.5.
-- Export: arch §14 M0 lists CSV only. Detail §2 adds JSON. This file follows detail §2.
-- Netflix CSV: arch §2 S6 gives title, date, duration and device. Detail §13 says only Title and Date may be present.
-- Tags milestone: arch §14 puts tags in M4. Detail §13 mentions tag transactions in M1 UI.
-- Prime domains: arch §2 and §12 use `amazon.*`. Detail §6 restricts to 12 named domains and requires `video=1` for `/dp`.
-- Arch §1 network budget allows feeds named in arch §2. The RSS feed appears in arch §8 only.
-- Arch §1 CPU budget says "under 1 s per hour". Detail §12 excludes copy time from the gate.
-- ZIP import for Takeout: arch §9 imports zips from Drive. Detail §13 says ZIP support needs a separate dependency decision.
-- S4 decision date: 2026-10-25 in arch §0 and §15. Arch §2 note says 2026-10-24.
+Resolved on 2026-10-28 (the docs were edited to agree; build contract wins):
+- Thumbnail cap is 100 MB everywhere, including the detail §11 example JSON. The M1.5 gate is the detail wording: ship only at or under 100 MB, otherwise stay disabled until Maria decides on a bounded LRU cache.
+- One `omoi.exe` plus the windowless `omoiw.exe` helper (detail §10). No HTTP dependency in M0 (detail §1); the listener/UI server and enrichment client are chosen at M1/M3.
+- Export is CSV and JSON in M0 (detail §2). Prime uses the 12 named domains and `video=1` (detail §6). Dedupe is the fixed 1,800 s anchor (detail §7).
+- Takeout ZIP needs its own dependency decision (detail §13); until then the owner unzips the JSON into the drop folder. The network budget names channel RSS (arch §8) and none in M0. The CPU budget is processing time per warm run, copy time separate.
+- M3 sessionizing runs inside `omoi collect`; tags are written from M4, not M1.
+
+Still open: Netflix CSV columns beyond Title and Date, and the items under Unspecified in docs above.

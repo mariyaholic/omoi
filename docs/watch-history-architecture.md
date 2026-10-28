@@ -2,7 +2,7 @@
 
 Name: **Omoi** (思い, "thoughts / memories"); binary and subcommands `omoi`, data in `%LOCALAPPDATA%\omoi\`.
 (Draft 1 used the working name *ashiato*; renamed by Maria on 2026-10-24.)
-Status: design only, nothing built. Date: 2026-10-24. Author: claude.scout (opus), for Maria. Draft 2 edits: Ava.tower, recording Maria's §15 answers (see §0) and the review in `docs/omoi-design-review.md`.
+Status: design only, nothing built. Date: 2026-10-24; conflicts with the build contract resolved 2026-10-28 (see the Reconciliation note after §0). Author: claude.scout (opus), for Maria. Draft 2 edits: Ava.tower, recording Maria's §15 answers (see §0) and the review in `docs/omoi-design-review.md`.
 
 ```
 From→To: claude.scout → Ava.tower
@@ -44,6 +44,13 @@ Maria answered §15 Q1–Q5 on 2026-10-24 and Q3/Q6–Q8 on 2026-10-25. These ov
 
 Bilibili ranks second on global users but is mostly a mainland-China audience, so Maria moved it after Twitch (Q6, 2026-10-25). Rows above keep their user numbers; only the rank changed.
 
+## Reconciliation note (2026-10-28)
+
+Detail doc governs where it differs from this draft: schema (§4), dedupe (§5 step 3), dependencies (§3), URL patterns (§12), export formats and the M1.5 gate (§14). Two gaps the docs left are now decided, to be revisited at M3 and M1:
+
+- **Who turns listener events into sessions (M3):** `omoi collect` does, inside its single `BEGIN IMMEDIATE` transaction, reading `raw_events` the listener appended and deleting processed rows when it commits their `sessions` (detail §4 and §8). The listener only appends and never writes `sessions`.
+- **Tags in M1:** the M1 UI offers delete only. Tag writes arrive with the tagging UI in M4 (§14).
+
 ## 1. Goal and budgets
 
 Collect what Maria watches **on her PC** on YouTube, Bilibili, Netflix, Twitch, Prime Video,
@@ -56,9 +63,9 @@ Hard budgets (measured, not hoped):
 |---|---|
 | RAM, collector | 0 between runs (it exits); < 30 MB peak during a run |
 | RAM, listener (optional resident) | ≤ 10 MB working set |
-| CPU | collector run < 1 s per hour; listener ≈ 0 % (event-driven, no polling loops) |
+| CPU | collector: processing < 1 s per warm run (copy time reported separately), once an hour; listener ≈ 0 % (event-driven, no polling loops) |
 | Disk | ≤ 30 MB per 100k views incl. FTS index; thumbnails off until the M1.5 disk-use test passes, then a capped cache (default cap 100 MB) |
-| Network | only enrichment APIs and feeds named in §2; nothing leaves the PC otherwise |
+| Network | only enrichment APIs and feeds named in §2 and §8 (channel RSS); none at all in M0; nothing leaves the PC otherwise |
 
 ## 2. Data sources
 
@@ -72,7 +79,7 @@ app joins several partial sources on a shared key `(platform, external_id)`.
 | S3 | Userscripts (Violentmonkey/Tampermonkey) per site | yes (listener) | exact video id, played seconds, duration, progress, clean titles | live events |
 | S4 | *(OFF by Maria's decision, 2026-10-25)* `yt-dlp --cookies-from-browser firefox --flat-playlist -J ":ythistory"` | yes, if enabled | YouTube account history incl. phone/TV | daily |
 | S5 | *(optional)* Google Takeout scheduled export → Google Drive for desktop folder | yes after setup | full YouTube history (`watch-history.json`), mainly a one-time backfill for a PC-only app | every 2 months |
-| S6 | Netflix `ViewingActivity` CSV (userscript auto-saves on visiting the page) | semi | title, date, **duration**, device | when Maria opens the page (~monthly) |
+| S6 | Netflix `ViewingActivity` CSV (userscript auto-saves on visiting the page) | semi | title and date always; duration and device **only if the export carries them** (detail §13: a standard export may have only Title and Date) | when Maria opens the page (~monthly) |
 | S7 | Amazon / Twitch / Disney+ data requests | manual | backfill | ~6-monthly |
 | S8 | Local players: mpv `watch_later`, VLC `vlc-qt-interface.ini` recent list, Jellyfin/Plex API | yes | local files watched | hourly |
 
@@ -80,7 +87,7 @@ Notes:
 - Extensions/userscripts cost nothing for personal use: Chrome/Edge/Brave "Load unpacked" in
   developer mode is free (the $5 is only for Web Store publishing); userscripts need no
   packaging. Recent Chrome needs "Allow user scripts" on the userscript manager.
-- S4 is **off and outside M0–M3** (Maria, 2026-10-24). If enabled later, it uses Maria's login cookies. It is maintained upstream (not a home-made scraper) but is a
+- S4 is **off and outside M0–M3** (Maria, 2026-10-25). If enabled later, it uses Maria's login cookies. It is maintained upstream (not a home-made scraper) but is a
   terms-of-service grey zone; it stays opt-in. Chrome's app-bound cookie encryption breaks
   `--cookies-from-browser chrome` on Windows, hence Firefox.
 
@@ -107,10 +114,11 @@ Notes:
                                └───────────────────────────────────────────┘
 ```
 
-**One binary, three subcommands.** Rust, matching the estate's other crates (raw Win32 /
+**One binary, three subcommands** (plus a tiny windowless `omoiw.exe` helper for the scheduled collect, detail §10). Rust, matching the estate's other crates (raw Win32 /
 `windows` crate style as in mh-ticker, latch, shijima): `rusqlite` with `bundled` (FTS5),
-`windows` crate (`Media_Control`, `Foundation`) for SMTC, `tiny_http` for the local
-endpoint/UI, `ureq` for enrichment. Build on the D:\rust GNU toolchain (MSVC link is broken
+`windows` crate (`Media_Control`, `Foundation`) for SMTC. M0 has no HTTP dependency at all
+(detail §1); the listener/UI server and enrichment client (`tiny_http`, `ureq` were the draft-1 idea)
+are decided at M1/M3 against the size budget, with standard-library bounded HTTP first (detail §13). Build on the D:\rust GNU toolchain (MSVC link is broken
 on this machine). Target binary ≤ 6 MB.
 
 Why a separate listener rather than a tray app: everything except live time-tracking works
@@ -118,6 +126,8 @@ with **no resident process at all**. The listener is the only thing that must st
 stays tiny and does nothing but append events.
 
 ## 4. Data model
+
+*Illustrative. The schema that is built is `src/db/0001.sql` in detail §4, which adds `channel_id`, `approx_duration_s`, `metadata_rank`, `sessions.source`, the `platform` CHECK, the `raw_events` size CHECK and the FTS triggers.*
 
 ```sql
 CREATE TABLE items(              -- one row per distinct video/episode/stream
@@ -166,8 +176,8 @@ Rough size: items ~200 B, views ~40 B, sessions ~40 B, FTS ~100 B per item.
      Time = µs since 1970.
 2. **Normalize** by URL pattern (§12) to `(platform, external_id)`; drop non-matches early
    (most browser history is not video).
-3. **Dedupe** into `views`: same item within 30 min across sources = one view; keep the
-   richest source's metadata.
+3. **Dedupe** into `views`: a fixed 1,800 s window anchored at the first view (no chaining) across
+   sources = one view; keep the richest source's metadata (detail §7).
 4. **Sessionize** listener events into `sessions`: play→pause/stop spans, summed; gaps
    > 5 min close a session.
 5. **Join SMTC to items**: SMTC has no URL, so match `(title, time)` against S1/S3 views
@@ -227,7 +237,7 @@ Score shelf items by `time_spent_on_channel × recency_decay`; cap each shelf at
 - `omoi collect --daily` — RSS feeds, enrichment batch (S4 yt-dlp only if Maria enables it).
 - Takeout (optional): Maria sets up once in takeout.google.com → YouTube → history only, JSON format,
   "export every 2 months for 1 year", delivery to Drive; the hourly collector checks the synced
-  Drive folder and imports any new zip (idempotent by file hash). No file watcher.
+  Drive folder and imports any new export (idempotent by file hash). No file watcher. ZIP support needs a separate dependency decision (detail §13), so until then Maria unzips `watch-history.json` into the folder.
 - `omoi listen` — Task Scheduler at logon (optional; off = no time tracking).
 
 ## 10. Resource discipline
@@ -264,7 +274,7 @@ Score shelf items by `time_spent_on_channel × recency_decay`; cap each shelf at
 | Twitch | `twitch.tv/videos/ID` (VOD); `twitch.tv/<channel>` live → `live:<channel>:<date>` |
 | Crunchyroll | `crunchyroll.com/watch/ID/…` |
 | Bilibili | `bilibili.com/video/BV…` (+ `?p=` part) |
-| Prime Video | `primevideo.com/detail/ID`, `amazon.*/gp/video/detail/ID` |
+| Prime Video | `primevideo.com/detail/ID`; Amazon domains are the 12 named in detail §6, and `/dp`, `/gp/aw/d` only with `video=1` (detail §6 governs all URL patterns) |
 | Disney+ | `disneyplus.com/(video|play)/ID` |
 
 ## 13. Known traps
@@ -285,9 +295,9 @@ Reordered on 2026-10-24 for a PC-only app (§0). S4 is not in any core milestone
 
 | M | Scope | Done when |
 |---|---|---|
-| M0 | `omoi collect` with S1 (Chrome/Edge/Brave/Firefox), schema + migrations, normalizer (all 7 platforms' URL patterns), dedupe, `omoi export --csv` | a week of real history imported; idempotent re-run adds 0 rows; run < 1 s on a warm cache (copy time measured separately) |
+| M0 | `omoi collect` with S1 (Chrome/Edge/Brave/Firefox), schema + migrations, normalizer (all 7 platforms' URL patterns), dedupe, `omoi export` (CSV and JSON) | a week of real history imported; idempotent re-run adds 0 rows; run < 1 s on a warm cache (copy time measured separately) |
 | M1 | `omoi ui` — timeline, search (FTS), per-platform/channel views | page loads < 200 ms on 10k items |
-| M1.5 | **Thumbnail disk-use test**: `omoi thumbs --measure --limit 500` downloads the smallest usable thumbnail (YouTube `mqdefault.jpg`, 320×180) for the newest 500 items into `%LOCALAPPDATA%\omoi\thumbs\`, records bytes per platform, extrapolates to the full catalogue, then deletes nothing until Maria reads the numbers | report written to `thumbs-measure.json`; hard stop at 50 MB during the test; feature ships only if projected full-catalogue size ≤ 100 MB, or the cache is still useful with LRU at that cap (cap configurable) |
+| M1.5 | **Thumbnail disk-use test**: `omoi thumbs --measure --limit 500` downloads the smallest usable thumbnail (YouTube `mqdefault.jpg`, 320×180) for the newest 500 items into `%LOCALAPPDATA%\omoi\thumbs\`, records bytes per platform, extrapolates to the full catalogue, then deletes nothing until Maria reads the numbers | report written to `thumbs-measure.json`; hard stop at 50 MB during the test; feature ships only if projected full-catalogue size ≤ 100 MB (cap configurable); otherwise the cache stays disabled until Maria decides on a bounded LRU cache (detail §11) |
 | M2 | S6 Netflix CSV + S8 local players; *(optional)* S5 Takeout backfill | Netflix and local items visible; no duplicates vs S1 |
 | M3 | `omoi listen` — SMTC + userscripts in platform order (YouTube, Netflix, Twitch, Bilibili first; Prime, Disney+, Crunchyroll next), sessions, time spent | listener ≤ 10 MB, ≈ 0 % CPU over 1 h of playback |
 | M4 | enrichment + tags + channel tagging UI (same platform order) | ≥ 90 % of YouTube items have category |

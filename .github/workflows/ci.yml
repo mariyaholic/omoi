@@ -35,3 +35,5 @@ jobs:
         run: cargo +${{ matrix.toolchain }} test --locked --all-targets
       - name: Release build
         run: cargo +${{ matrix.toolchain }} build --locked --release --bins --example synthetic
+      - name: Synthetic release journey
+        run: python scripts/smoke.py --bin-dir target/release

@@ -2,11 +2,13 @@
 
 Prepared by Ava.tower, 2026-10-24 (Asia/Manila). The free models hit their usage limits, so this is a partial M0 handed over for you to continue locally.
 
-> **Update 2026-10-28 (claude.scout):** Omoi lives in its own local repo with no GitHub remote yet. The docs carry Maria's Q3/Q6/Q7/Q8 answers (2026-10-25) and the conflicts between them are resolved (see the Reconciliation note in the architecture draft; two small decisions are recorded there and in detail §8 and §13). Two newly decided points a builder will meet: M3 sessionizing runs inside `omoi collect`, and the M1 UI is delete-only (tags are M4). U4 also gains `profile_excludes` and the test `profile_excludes_applied` (detail doc §3 and §14). Build with the `D:\rust` GNU toolchain (cargo 1.98.1). `cargo check --locked` currently fails only with E0583 for `readers`, as described below.
+> **Update 2026-11-03 (codex.scout):** For the current repository location, implementation order, acceptance gates, and handoff to Astra, start with [IMPLEMENTATION.md](IMPLEMENTATION.md). The Q3/Q6/Q7/Q8 decisions below were answered on 2026-10-25; the old questions at the end of prior versions are superseded. Toolchain locations and versions in older notes are historical, not proof of the current environment.
+
+> **Historical update 2026-10-28 (claude.scout):** Omoi was in its own local repo with no GitHub remote at that time. The docs carry Maria's Q3/Q6/Q7/Q8 answers (2026-10-25) and the conflicts between them are resolved (see the Reconciliation note in the architecture draft; two small decisions are recorded there and in detail §8 and §13). M3 sessionizing runs inside `omoi collect`, and the M1 UI is delete-only (tags are M4). U4 also gains `profile_excludes` and the test `profile_excludes_applied` (detail doc §3 and §14). At that time, `cargo check --locked` failed with E0583 for `readers`; the current environment needs a fresh check.
 
 ## Where things are
 
-Everything is in this repo, `C:\Users\<you>\Desktop\mariyaholic\omoi` (local, no remote), on `main`:
+Everything is in this repo, locally at `C:\Users\<you>\Desktop\mariyaholic\omoi`:
 
 - `docs/watch-history-architecture.md`: draft 2, renamed to Omoi, with Maria's decisions in §0. Its "Reconciliation note" says where the detail doc governs.
 - `docs/omoi-design-review.md`: the Ava.tower review.
@@ -112,7 +114,9 @@ Full detail is in `docs/omoi-architecture-detail.md` §14 and the sections it re
 
 Integration gate: `cargo test --all-targets` must be green on Linux and on Windows GNU. The named FTS, sidecar, concurrent-writer, dry-run and cap tests must not be `#[ignore]`d.
 
-## Build and test on Windows (D:\rust GNU toolchain; MSVC link is broken)
+## Historical Windows build notes (reverify the toolchain)
+
+The following commands describe the earlier Windows GNU environment; paths, versions and the prior MSVC result may have changed. Check `IMPLEMENTATION.md` first. `rustup override set` persists a directory override, so select an existing toolchain without changing it unless needed and authorized.
 
 ```powershell
 cd C:\Users\<you>\Desktop\mariyaholic\omoi
@@ -145,9 +149,9 @@ opencode run --auto -m opencode/deepseek-v4.1-flash-free "Implement ONLY unit U1
 
 Commit each unit only when `cargo test --all-targets` is green. Then have a different model review it (Astra, `gpt-6-astra`), not the model that wrote it.
 
-## Open questions for Maria
+## Decisions already made
 
-- Q3: S4 yt-dlp with cookies. Still open, and S4 stays off.
-- Q6: keep Bilibili at #2 or move it after Twitch?
-- Q7: is a 250 MB thumbnail cap OK?
-- Q8: should M0 read all browser profiles, or a named list?
+- Q3: yt-dlp with cookies stays off; it is outside the core milestones.
+- Q6: platform order starts YouTube, Netflix, Twitch, Bilibili.
+- Q7: the proposed thumbnail cache cap is 100 MB, subject to the M1.5 measurement gate.
+- Q8: discover all supported browser profiles, with `profile_excludes`.

@@ -1,0 +1,45 @@
+# Omoi implementation handoff
+
+Prepared 2026-11-03 for Astra and local implementers. This is a work plan, not a claim that Omoi runs today.
+
+## Starting point
+
+- M0 U1 is partial: the manifest, lockfile, error model and placeholder entry point exist. `src/lib.rs` references the missing `src/readers/mod.rs`; `tests/types.rs` does not exist. U2–U14 have not been implemented.
+- The most recent completed compiler result in the prior handoff was E0583 for `readers`. An offline check attempted on 2026-11-03 was interrupted after it produced no output, so do not treat it as fresh compiler proof. Inspect the current environment and rerun the baseline.
+- Design authority: [M0 build contract](docs/omoi-architecture-detail.md), especially §14 and the referenced sections; [architecture decisions](docs/watch-history-architecture.md) §0 and reconciliation note; [feature inventory](FEATURES.md); [original handoff](HANDOFF.md). If specifications conflict, record the conflict and use the reconciliation hierarchy rather than silently inventing behavior.
+- The existing `WORKSTACK.md` is local and excluded from Git. Use this tracked file and the contract as the portable handoff; update the local WORKSTACK when available.
+
+## Work method
+
+1. Confirm the checkout, branch, clean/dirty state, toolchain and current `cargo check --locked` result. Do not overwrite existing edits. The old `D:\rust\.cargo\bin\cargo.exe` path is stale on this machine; `D:\rust\cargo\bin\cargo.exe` was discoverable on 2026-11-03. Verify `rustup`, `RUSTUP_HOME`, `CARGO_HOME`, the toolchain and MinGW before relying on them. Keep build artifacts on D: (`CARGO_TARGET_DIR`), as available. Avoid modifying a persistent rustup override merely to perform a check.
+2. Work on a feature branch. Start with U1 only; use §14 of the contract for exact public types, file paths, dependencies and named acceptance tests. Write fixture-based tests first, implement the minimum, and run the relevant tests. Keep the lockfile and dependency constraints consistent with the contract.
+3. For each subsequent unit, implement its named acceptance tests and dependencies, run the applicable tests and `cargo fmt --check`, then run `cargo test --all-targets` once the crate builds. Review the diff and record results and remaining gaps before the next unit. Independent review should check the actual diff and test output, not just an agent summary.
+4. Use synthetic browser databases and isolated temporary data directories in automated tests. Do not collect, print, export, upload or transmit the user's real browser history or cookies during development. Scheduler installation and real-profile smoke tests are separate, explicit user-run validation steps.
+5. Report failures, unavailable environments and unmeasured budgets accurately. Do not mark a unit complete based on a stub or ignored test. Update the feature inventory and handoff as behavior lands; distinguish implementation from local, Windows, Linux and hosted evidence.
+
+## M0 sequence and gates
+
+The full test names and contracts are in detail §14; these checkpoints do not replace them.
+
+| Sequence | Deliverable | Essential proof |
+|---|---|---|
+| U1 | Reader contracts, types and error mapping | Three named U1 tests, compilation, serializable cursors and distinct source IDs |
+| U2–U3 | Paths/config and SQLite migration | Config validation, transactional migration, future-version rejection, FTS and foreign keys |
+| U4–U5 | Browser profile discovery and consistent snapshots | All profiles by default, `profile_excludes`, Firefox/Chromium fixtures, sidecar handling, bounded retry and cleanup |
+| U6–U8 | Chromium and Firefox readers; URL normalizer | Epoch conversion, pagination and cursor progress, schema failures, URL vectors, no network |
+| U9–U11 | Dedupe, exports and bounded logs | Transaction/concurrency cases, streaming/no-clobber exports, redaction and size caps |
+| U12–U14 | Scheduler, collect/CLI, synthetic measurement | Scheduler XML/argument tests; atomic checkpoints, dry-run and idempotence; deterministic fixtures and resource measurement |
+
+M0 integration requires `cargo test --all-targets` on Windows GNU and Linux, with the named critical tests enabled, plus the contract's real-data and Windows scheduler smoke checks when explicitly run. Report each environment separately. Record actual memory, CPU, disk and executable-size measurements before asserting the budget targets. `cargo check` alone is not a test or a performance measurement.
+
+## Later milestones
+
+After M0's gates, M1 adds a local read-oriented timeline/search UI and the approved delete flow; tags arrive in M4. M1.5 measures thumbnail size with the specified 50 MB test stop and proposed 100 MB cache cap; the cache does not ship until the measurement gate passes or the owner decides otherwise. M2 covers Netflix CSV and local-player imports; Takeout remains optional. M3 adds the optional listener, userscripts and session processing in `omoi collect`. M4 adds metadata and tagging; M5 adds recommendation shelves. See architecture §14 and detail §§8, 11–13 before designing these stages; do not present targets as measured behavior.
+
+Preserve Maria's decisions: yt-dlp/cookie collection remains off; platform priority is YouTube, Netflix, Twitch, Bilibili, then Prime, Disney+ and Crunchyroll; discover supported profiles by default with exclusions. Phone/TV account ingestion is optional and outside the core PC milestones.
+
+## Ready-to-use first assignment
+
+> Read `IMPLEMENTATION.md`, `HANDOFF.md` and `docs/omoi-architecture-detail.md` §§1, 5, 9 and 14. Inspect the working tree and run a baseline check. Implement **only U1**: the reader types and trait plus the three named acceptance tests, without adding dependencies. Use isolated fixtures, preserve existing edits, run the relevant tests and formatting checks, and report exact commands, outcomes and any gaps. Stop before U2 for review.
+
+For subsequent units, replace U1 with the next unit in contract §14 and retain its dependency and verification gates. Astra may implement or review, but use an independent reviewer for a meaningful review of each change.

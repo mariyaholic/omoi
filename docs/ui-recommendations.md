@@ -42,6 +42,8 @@ Automation has a clear state: Not installed / Installed / Needs attention. Expla
 
 Use the planned on-demand loopback UI, static local assets and ten-minute idle exit. Keep the browser as the first UI host; reconsider a native wrapper only after measuring the UI server/browser cost. No Electron runtime, network font/CDN, remote analytics, or background recommendation service.
 
+Measure the UI server and the browser tab separately. The collector's measured footprint is not a budget claim for a browser-hosted interface. Start with plain HTML/CSS and small JavaScript modules, ordinary paginated queries and local system fonts. Update the view after explicit actions instead of polling the database continuously. Give the search field a visible label, keep filter state when opening details, and restore keyboard focus when the detail pane closes.
+
 ## What still needs visual validation
 
 This is a direction proposal, not a rendered UI. Before implementation is accepted, render desktop/mobile states with real synthetic titles: empty history, mixed sources, long titles, partial import failure, missing metadata, keyboard-only focus and delete confirmation. Validate contrast, 200% text enlargement, 320 CSS-pixel reflow (including 400% zoom from 1280px), persistent visible keyboard focus and the 10k-item load-time target. Keep later time-spent charts separate until their provenance and overlap handling are implemented. These accessibility checks follow [W3C reflow guidance](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html) and [visible focus guidance](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html); this document does not claim conformance for an unbuilt UI.

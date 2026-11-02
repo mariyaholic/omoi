@@ -1,5 +1,7 @@
 //! Bounded history-reader contracts. Paths used for source IDs must already be canonical.
 pub mod discover;
+pub mod snapshot;
+pub mod sqlite;
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -117,6 +119,7 @@ pub struct RawVisit {
 }
 
 pub struct Batch {
+    pub scanned: usize,
     pub visits: Vec<RawVisit>,
     pub next: Cursor,
     pub exhausted: bool,

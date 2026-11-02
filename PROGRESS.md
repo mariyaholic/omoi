@@ -1,5 +1,9 @@
 # Implementation progress
 
+Latest: the manual CLI pipeline now works with synthetic Chrome/Firefox fixtures. See `BASELINE.md` for the implemented flow and remaining M0 gates; the foundations-only notes below are historical. There is now `collect`, `export`, `db migrate`, `db info` and `paths`; automatic scheduling and the UI are not implemented.
+
+Current verification: 27 Windows GNU tests pass; all six pipeline tests pass in release mode; Clippy and formatting checks pass. Optimized executable: 2,038,784 bytes. See BASELINE.md for path and hash.
+
 2026-11-03, codex.impl, model: Astra. Branch: `feat/core-foundations`.
 
 This file supersedes the historical missing-module status in the architecture and feature inventory. The roadmap is still in progress; no milestone is accepted as complete.

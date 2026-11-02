@@ -63,7 +63,7 @@ Hard budgets (measured, not hoped):
 |---|---|
 | RAM, collector | 0 between runs (it exits); < 30 MB peak during a run |
 | RAM, listener (optional resident) | ≤ 10 MB working set |
-| CPU | collector: processing < 1 s per warm run (copy time reported separately), once an hour; listener ≈ 0 % (event-driven, no polling loops) |
+| CPU | collector: processing < 1 s per warm run (copy time reported separately), once an hour; listener ≈ 0% (event-driven, no polling loops) |
 | Disk | ≤ 30 MB per 100k views incl. FTS index; thumbnails off until the M1.5 disk-use test passes, then a capped cache (default cap 100 MB) |
 | Network | only enrichment APIs and feeds named in §2 and §8 (channel RSS); none at all in M0; nothing leaves the PC otherwise |
 
@@ -193,7 +193,7 @@ S6 Netflix CSV duration → Chrome `visit_duration` (tab open time, marked *appr
 none. The UI shows which tier a number came from.
 
 Views offered: total and per platform/channel/tag; per day/week heatmap; "completed"
-(max position ≥ 90 % of duration) vs "sampled" (< 10 %).
+(max position ≥ 90% of duration) vs "sampled" (< 10%).
 
 ## 7. Cataloguing (video types)
 
@@ -219,7 +219,7 @@ All cheap SQL or free feeds; no model server.
 
 | Shelf | How |
 |---|---|
-| Continue watching | sessions with max position 10–90 % of duration, newest first |
+| Continue watching | sessions with max position 10–90% of duration, newest first |
 | New from your channels | YouTube channel RSS `youtube.com/feeds/videos.xml?channel_id=…` for the top 30 channels by time spent, fetched by the collector once a day; unseen items only |
 | Drifted away | channels with high 90-day time but nothing in the last 30 days |
 | More like this (shows/films) | TMDB `/movie/{id}/recommendations`, `/tv/{id}/recommendations` |
@@ -299,8 +299,8 @@ Reordered on 2026-10-24 for a PC-only app (§0). S4 is not in any core milestone
 | M1 | `omoi ui` — timeline, search (FTS), per-platform/channel views | page loads < 200 ms on 10k items |
 | M1.5 | **Thumbnail disk-use test**: `omoi thumbs --measure --limit 500` downloads the smallest usable thumbnail (YouTube `mqdefault.jpg`, 320×180) for the newest 500 items into `%LOCALAPPDATA%\omoi\thumbs\`, records bytes per platform, extrapolates to the full catalogue, then deletes nothing until Maria reads the numbers | report written to `thumbs-measure.json`; hard stop at 50 MB during the test; feature ships only if projected full-catalogue size ≤ 100 MB (cap configurable); otherwise the cache stays disabled until Maria decides on a bounded LRU cache (detail §11) |
 | M2 | S6 Netflix CSV + S8 local players; *(optional)* S5 Takeout backfill | Netflix and local items visible; no duplicates vs S1 |
-| M3 | `omoi listen` — SMTC + userscripts in platform order (YouTube, Netflix, Twitch, Bilibili first; Prime, Disney+, Crunchyroll next), sessions, time spent | listener ≤ 10 MB, ≈ 0 % CPU over 1 h of playback |
-| M4 | enrichment + tags + channel tagging UI (same platform order) | ≥ 90 % of YouTube items have category |
+| M3 | `omoi listen` — SMTC + userscripts in platform order (YouTube, Netflix, Twitch, Bilibili first; Prime, Disney+, Crunchyroll next), sessions, time spent | listener ≤ 10 MB, ≈ 0% CPU over 1 h of playback |
+| M4 | enrichment + tags + channel tagging UI (same platform order) | ≥ 90% of YouTube items have category |
 | M5 | recommendation shelves | all six shelves populated from real data |
 | — | S4 yt-dlp | off (Maria, §15 Q3, 2026-10-25); not scheduled |
 

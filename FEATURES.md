@@ -14,7 +14,7 @@ The numbers come from the docs. The detail doc says its performance figures are 
 | RAM, listener | 10,000,000 bytes working set at most | arch §1, detail §12 |
 | RAM, ui server | unspecified in docs | n/a |
 | CPU, collector | Warm run: processing under 1 s wall and under 1 s CPU. Copy time is reported separately. Arch §1 says "under 1 s per hour" | arch §1, detail §12 |
-| CPU, listener | About 0 % while idle. Event-driven, no polling | arch §1, detail §12 |
+| CPU, listener | About 0% while idle. Event-driven, no polling | arch §1, detail §12 |
 | Disk, catalogue | 30,000,000 bytes per 100,000 views, including items, views, indexes, FTS and checkpoints | arch §1, detail §12 |
 | Disk, thumbnails | Off until the M1.5 test passes. Cache cap 100,000,000 bytes, LRU by last view | arch §0 Q4 and Q7, detail §11 |
 | Disk, thumbnail test | 50,000,000 bytes hard stop, including in-flight bytes | detail §11 |
@@ -63,20 +63,20 @@ State values: **specified** (contract written), **partial** (some code exists), 
 | F28 | Jellyfin and Plex adapters | M2, opt-in | arch §2 S8; detail §13 | specified | network only when configured; credentials in Credential Manager | M2 exit. No named test |
 | F29 | Google Takeout backfill (S5), import of zip from a Drive folder | M2, optional | arch §2 S5, §9; detail §13 | optional | ZIP support needs a separate dependency decision (detail §13) | Idempotent by file hash (arch §9). No named test |
 | F30 | Time spent from userscripts (S3): played seconds, buffered in GM storage | M3 | arch §2 S3, §6; detail §8 | specified | throttled `timeupdate` only; no polling | Session vectors in detail §8 (7 rows) |
-| F31 | Time spent from Windows media session (S2, SMTC) | M3 | arch §2 S2, §5; detail §8 | specified | event subscription only | Session vectors in detail §8 (SMTC rules). M3 exit: listener CPU about 0 % over 1 h |
+| F31 | Time spent from Windows media session (S2, SMTC) | M3 | arch §2 S2, §5; detail §8 | specified | event subscription only | Session vectors in detail §8 (SMTC rules). M3 exit: listener CPU about 0% over 1 h |
 | F32 | Sessions table and sessionizer: gap over 300 s closes a session | M3 | arch §5, §8; detail §8 | specified | durable open-session state; run by `omoi collect` in its own transaction (decided 2026-10-28); M0 stub returns NotImplemented | `sessionize_m0_stub` (U13); session vectors in detail §8 |
 | F33 | Localhost listener: `POST /event` on 127.0.0.1:43821 with a token | M3 | arch §11; detail §3, §13 | specified | at most 10,000,000 bytes working set; body 16,384 bytes | Hostile Host and Origin, missing token, oversized or slow request, full inbox, repeated event ID, port collision. Pure validators (detail §13) |
 | F34 | `omoi listen` at logon, opt-in, separate from the hourly task | M3 | arch §9; detail §13 | specified | the only resident process | M3 exit. No named test |
 | F35 | Interval-aware time totals with provenance; the UI never adds overlapping tiers | M3 | detail §8 | specified | none | Session vector: userscript [0,60] and SMTC [0,60] give two rows, UI total 60 |
 | F36 | Time-spent views: totals, per day and week heatmap, completed vs sampled | milestone unspecified in docs (after M3) | arch §6 | specified | SQL only | unspecified in docs |
 | F37 | Video-type rules: short and live from the URL; length buckets; episode or movie | M0 for URL kind (detail §6); buckets and episode or movie unspecified | arch §7 step 1; detail §6 | specified | free and offline | `normalizer_url_vectors` checks the kind column; no test for buckets |
-| F38 | YouTube Data API enrichment: category, tags, duration, channel ID | M4 | arch §7; review F3 | specified | 1 quota unit per 50 videos; 10,000 per day; per-run cap "e.g. 500" (arch §10) | M4 exit: at least 90 % of YouTube items have a category |
+| F38 | YouTube Data API enrichment: category, tags, duration, channel ID | M4 | arch §7; review F3 | specified | 1 quota unit per 50 videos; 10,000 per day; per-run cap "e.g. 500" (arch §10) | M4 exit: at least 90% of YouTube items have a category |
 | F39 | TMDB enrichment: genres (recommendations in F47) | M4 | arch §7 | specified | paginated, 20 per page; about 40 to 50 requests per second; back off on 429; attribution in the UI (review §2) | None named |
 | F40 | Twitch Helix enrichment: VOD and game category | M4 | arch §7; review §2 | specified | Client-Id plus app token; client secret in Credential Manager; VODs expire, so enrich promptly | None named |
 | F41 | YouTube oEmbed title fallback | M4 | arch §7 | specified | no key; one request per item | None named |
 | F42 | Item tags: rule, api or user, with source per tag | M4 | arch §4, §7 | specified | `item_tags` rows | None named. Tag writes come with the M4 tagging UI; the M1 UI is delete-only |
 | F43 | Channel tags: tag a channel once, items inherit | M4 | arch §7; detail §4 | specified | `channel_tags` rows | M4 exit (category coverage). No direct test |
-| F44 | Shelf: Continue watching (max position 10 to 90 % of duration) | M5 | arch §8 | specified | SQL only; needs F32 | M5 exit: all six shelves populated from real data |
+| F44 | Shelf: Continue watching (max position 10 to 90% of duration) | M5 | arch §8 | specified | SQL only; needs F32 | M5 exit: all six shelves populated from real data |
 | F45 | Shelf: New from your channels (YouTube RSS, top 30 channels, unseen items) | M5 | arch §8; review F3 | specified | one RSS request per channel per day; 15 newest per feed; needs `channel_id` from F38 | M5 exit. Daily job milestone unspecified |
 | F46 | Shelf: Drifted away (high 90-day time, nothing in last 30 days) | M5 | arch §8 | specified | SQL only; needs F30 to F32 | M5 exit |
 | F47 | Shelf: More like this, shows and films | M5 | arch §8 | specified | TMDB recommendations, 20 per page; title-to-TMDB mapping unspecified | M5 exit |
@@ -101,7 +101,7 @@ Maria's order (arch §0 Q6, 2026-10-25). The user counts use different metrics, 
 
 | Shelf | Data it needs | Method | Cost |
 |---|---|---|---|
-| Continue watching | Sessions (M3) with max position and duration | Sessions at 10 to 90 % of duration, newest first | SQL only; no network |
+| Continue watching | Sessions (M3) with max position and duration | Sessions at 10 to 90% of duration, newest first | SQL only; no network |
 | New from your channels | YouTube `channel_id` (F38); top 30 channels by time spent | Channel RSS feed, fetched once a day; unseen items only | At most 30 RSS requests per day; each returns 15 newest |
 | Drifted away | Time per channel over 90 days; last upload date | Channels with high 90-day time and nothing in the last 30 days | SQL only; no network |
 | More like this (shows and films) | Title to TMDB ID mapping (unspecified in docs) | TMDB `/movie/{id}/recommendations` and `/tv/{id}/recommendations` | Paginated, 20 per page; back off on 429 |
@@ -165,8 +165,8 @@ Rules:
 | M1 | F20 to F23 | Page load under 200 ms at 10,000 items (arch §14) |
 | M1.5 | F24, F25 | Report written to `thumbs-measure.json`. Cache ships only if the projection is at most 100,000,000 bytes (arch §14, detail §11) |
 | M2 | F26 to F29 (F29 optional) | Netflix and local items visible. No duplicates against S1 (arch §14) |
-| M3 | F30 to F35 | Listener at most 10,000,000 bytes working set, about 0 % CPU over 1 h of playback (arch §14). Remeasure with sessions and a full inbox (detail §12) |
-| M4 | F38 to F43 | At least 90 % of YouTube items have a category (arch §14) |
+| M3 | F30 to F35 | Listener at most 10,000,000 bytes working set, about 0% CPU over 1 h of playback (arch §14). Remeasure with sessions and a full inbox (detail §12) |
+| M4 | F38 to F43 | At least 90% of YouTube items have a category (arch §14) |
 | M5 | F44 to F49 | All six shelves populated from real data (arch §14) |
 
 ## Open items

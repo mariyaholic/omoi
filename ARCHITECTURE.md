@@ -38,7 +38,7 @@ omoi ui       (M1, on demand)
 | Process | Lifetime | Memory budget | CPU budget | DB access |
 |---|---|---|---|---|
 | `omoi collect` (also `omoiw.exe`, windowless) | One run, then exits. Task Scheduler hourly and at logon, "run only when user is logged on" | 0 between runs. Lifetime peak under 30,000,000 bytes, including a full import | Processing under 1 s per warm run (wall and CPU). Copy time reported separately (F6) | Writes `items`, `views`, `checkpoints` and FTS in one `BEGIN IMMEDIATE` transaction. A busy writer exits 4. Reads browser copies only, never the live file |
-| `omoi listen` (optional, M3) | Resident from logon. Off means no time tracking | 10,000,000 bytes working set or less | About 0 % when idle. Event-driven, no polling. Core-seconds reported over one hour of playback | Appends to `raw_events` (inbox). `omoi collect` turns inbox rows into `sessions` in its own transaction; the listener never writes `sessions` (decided 2026-10-28) |
+| `omoi listen` (optional, M3) | Resident from logon. Off means no time tracking | 10,000,000 bytes working set or less | About 0% when idle. Event-driven, no polling. Core-seconds reported over one hour of playback | Appends to `raw_events` (inbox). `omoi collect` turns inbox rows into `sessions` in its own transaction; the listener never writes `sessions` (decided 2026-10-28) |
 | `omoi ui` (M1) | On demand. Opens the browser. Exits after 10 min idle | Unspecified in docs | Unspecified in docs. Page load target under 200 ms at 10k items | Read-only connection (`query_only`). Writes only delete and tag transactions, each with a per-launch token |
 
 Userscripts run inside the browser, not as a process. They send events to the listener through `GM_xmlhttpRequest`.
@@ -149,7 +149,7 @@ Schema version is `PRAGMA user_version`. Migration 0001 sets it to 1. A newer ve
 | Collector RAM | 0 between runs. Under 30,000,000 bytes lifetime peak, including a full import | Draft 2 §1; detail §12 | Target only |
 | Listener RAM | Under 10,000,000 bytes working set | Draft 2 §1; detail §12 | Target only |
 | Collector CPU | Under 1 s per warm run. Copy time reported separately | Draft 2 §1; detail §12 (F6) | Target only |
-| Listener CPU | About 0 % idle. Core-seconds reported over one hour of playback | Draft 2 §1; detail §12 | Target only |
+| Listener CPU | About 0% idle. Core-seconds reported over one hour of playback | Draft 2 §1; detail §12 | Target only |
 | Database disk | Under 30,000,000 bytes per 100k views, including items, views, indexes, FTS and checkpoints. Baseline about 40k items | Draft 2 §1; detail §12 | Target only |
 | UI page load | Under 200 ms at 10k items (warm, local) | Draft 2 §14 M1; detail §12 | Target only |
 | `omoi.exe` size | Up to 6,000,000 bytes. Helper reported separately | Detail §1, §12 | Target only |

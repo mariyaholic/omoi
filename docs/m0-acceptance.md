@@ -15,7 +15,34 @@ Decision: **usable CLI baseline; full M0 acceptance remains open**. This is a me
 
 The earlier scheduling/recommendation revision `1d7d719` passed formatting, Clippy, all 38 tests and optimized builds locally. [Hosted run 41541772350](https://github.com/mariyaholic/omoi/actions/runs/41541772350) passed Ubuntu and Windows GNU formatting, lint, tests and release builds.
 
-Final revision verification and resource figures are appended below after the expanded run. A hosted check for one revision is not evidence for later edits until their own run succeeds.
+Final production source `4a74949`, with the release journey added at `98709be`, passes **48 Windows tests and 49 Linux tests** (the extra test checks the unsupported Linux scheduler/helper). Local formatting, Clippy with warnings denied, all-target tests and optimized build pass. Ruff and Python compilation checks pass; the release smoke runs locally and in [hosted run 41543519585](https://github.com/mariyaholic/omoi/actions/runs/41543519585), whose Ubuntu and Windows GNU jobs both succeeded. The release smoke checks deterministic fixtures/spacing, 1,200 source rows → 1,000 views/400 items, zero additions on rerun, export and honest empty recommendation shelves. Documentation/report-only commits after `98709be` do not change the measured binaries.
+
+## Recorded Windows resources
+
+Raw [baseline report](measurements/windows-baseline-20261103.json) and [long-title report](measurements/windows-long-titles-20261103.json) retain every measurement and counter. Baseline: 100,000 views / 40,000 items, 120,000 source rows including 10,000 cross-source duplicates and 10,000 irrelevant URLs, 40-byte titles. Twenty fresh full imports, twenty unchanged reruns, twenty ten-row updates, one metadata-only change and one WAL-only change. Final catalogue has 100,201 views after incremental checks.
+
+Environment: Windows 11 build 26200, Intel Core i5-10300H, D: WD My Passport 2626 USB HDD, Rust 1.98.1 Windows GNU, bundled collector SQLite 3.50.2. Harness: Python 3.13.3, measurement/checkpoint SQLite 3.49.1. No local compilation ran during this final pass. Cold cache and unrelated OS load were not controlled.
+
+| Case | Runs | Wall median / p95 / maximum | CPU median / maximum | Maximum lifetime peak |
+|---|---:|---:|---:|---:|
+| Full import | 20 | 16.752 / 23.367 / 32.598 s | 16.164 / 22.938 s | 10,829,824 bytes |
+| Unchanged | 20 | 175 / 232 / 304 ms | 78 / 109 ms | 7,258,112 bytes |
+| Ten new rows | 20 | 236 / 402 / 916 ms | 156 / 219 ms | 9,834,496 bytes |
+| Metadata-only source change | 1 | 247 ms | 234 ms | 9,768,960 bytes |
+| WAL-only source change | 1 | 864 ms | 203 ms | 9,867,264 bytes |
+
+Maximum internal processing wall time excluding snapshot copying: unchanged **14 ms**, ten-new-rows **228 ms**, metadata-only **112 ms**, WAL-only **216 ms**. Maximum copy wall respectively: 0, 688, 12 and 530 ms. Whole-process wall time above includes launch/shutdown and harness observation; it is not interchangeable with the collector's internal timer. Metadata-only rescans advance the fingerprint but do not retroactively update titles for already-consumed visits.
+
+Catalogue DB+WAL+SHM: **15,323,136 bytes** before and after harness checkpoint/connection close; page bytes equal that amount, freelist bytes 0. No VACUUM. Largest sampled temporary snapshot/spool usage: **30,140,206 bytes**, a 50 ms sampled lower bound rather than an exact maximum. It is additional to catalogue storage and removed on successful completion. Retained source fixtures are measurement artifacts, not app catalogue overhead. Final bounded logs: 464 bytes.
+
+Applicable baseline gates pass in these runs: collector peak <30,000,000 bytes; routine processing and CPU each <1 second; catalogue ≤30,000,000 bytes; primary executable ≤6,000,000 bytes. There is no collector process between runs. No UI or listener memory/CPU gate is claimed, and no Linux resource measurements are fabricated.
+
+Executable evidence:
+
+- `omoi.exe`: **2,168,832 bytes**, SHA-256 `bf49a477a9b7e84575479aa319f31ecdcaf61b5e9d1f339ec3711e9267a3a8f6`.
+- `omoiw.exe`: **2,172,928 bytes**, SHA-256 `e55deb58c91e4880f71c872da6ef5391f35618d725b9d1184579c74d7aeec26e`.
+
+The separate 1,024-byte-title stress workload (one full import, three warm/changed repetitions) produced **66,498,560 bytes** of catalogue and **11,169,792 bytes** maximum full-import working set. Full import took 24.049 seconds wall / 20.109 seconds CPU, with **184,990,828 bytes** sampled temporary snapshot/spool usage. This exceeds the 30 MB baseline storage target by design and demonstrates that it is a workload budget, not a hard catalogue size cap. Do not promise a fixed 30 MB ceiling for arbitrary history. Three repetitions are descriptive, not a robust p95 claim.
 
 ## Acceptance map
 
@@ -31,7 +58,7 @@ Final revision verification and resource figures are appended below after the ex
 | U11 logs | Global cap/redaction and stale-lock tests; dry-run avoids persistent collection logs | Per-source structured diagnostic counts and explicit logging-failure sink assertions |
 | U12 scheduler | XML options/escaping/argv quoting, Linux unsupported stub, Windows COM read-only absence query | Actual install/launch/remove and hidden-window/battery/logon smoke; native adapter difference below |
 | U13 orchestration | End-to-end collect/rerun, new rows, partial corruption, dry run, concurrent writers, session capture stub | Owner retained-week import; injected write/commit failure with cursor rollback; per-source rejected counts (current report is aggregate) |
-| U14 resources | Deterministic generator; Windows lifetime OS counters and saved reports | Linux resource counters; exhaustive generator determinism/spacing named suite; controlled cold cache and exact transient disk peak |
+| U14 resources | Determinism/spacing/counts/isolated-path release journey on Windows and Linux; Windows lifetime OS counters, 20-run distributions and separate long-title stress | Linux resource counters; exhaustive named generator suite beyond the release journey; controlled cold cache and exact transient disk peak |
 
 The table maps behavior, not a claim that all mandatory test names in the original contract exist. Some combined integration tests cover multiple assertions. The outstanding rows remain work; they are not waived by green CI.
 

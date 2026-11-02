@@ -4,6 +4,8 @@ Prepared by Ava.tower, 2026-10-24 (Asia/Manila). The free models hit their usage
 
 > **Update 2026-11-03 (codex.scout):** For the current repository location, implementation order, acceptance gates, and handoff to Astra, start with [IMPLEMENTATION.md](IMPLEMENTATION.md). The Q3/Q6/Q7/Q8 decisions below were answered on 2026-10-25; the old questions at the end of prior versions are superseded. Toolchain locations and versions in older notes are historical, not proof of the current environment.
 
+> **Autonomy update:** Maria has authorized Astra to continue beyond U1 through the roadmap without stopping for a new assignment at each unit. The authority, verification gates and owner boundaries in `IMPLEMENTATION.md` supersede the historical one-unit-at-a-time delegation instructions below.
+
 > **Historical update 2026-10-28 (claude.scout):** Omoi was in its own local repo with no GitHub remote at that time. The docs carry Maria's Q3/Q6/Q7/Q8 answers (2026-10-25) and the conflicts between them are resolved (see the Reconciliation note in the architecture draft; two small decisions are recorded there and in detail §8 and §13). M3 sessionizing runs inside `omoi collect`, and the M1 UI is delete-only (tags are M4). U4 also gains `profile_excludes` and the test `profile_excludes_applied` (detail doc §3 and §14). At that time, `cargo check --locked` failed with E0583 for `readers`; the current environment needs a fresh check.
 
 ## Where things are

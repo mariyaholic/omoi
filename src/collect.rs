@@ -58,6 +58,17 @@ pub fn collect(
     env: &PathEnvironment,
     dry_run: bool,
 ) -> Result<CollectReport> {
+    match collect_once(config, paths, env, dry_run) {
+        Err(Error::Busy) => collect_once(config, paths, env, dry_run),
+        result => result,
+    }
+}
+fn collect_once(
+    config: &Config,
+    paths: &Paths,
+    env: &PathEnvironment,
+    dry_run: bool,
+) -> Result<CollectReport> {
     let start = Instant::now();
     let temp = std::env::temp_dir();
     let run = TempDir::create(if dry_run { &temp } else { &paths.tmp })?;
@@ -108,6 +119,17 @@ pub fn collect(
         }
         let snap = match snapshot::copy(&profile.path, &run.0, config.snapshot_retries) {
             Ok(s) => s,
+            Err(
+                e @ Error::Io {
+                    context: "temporary root" | "temporary directory",
+                    ..
+                },
+            ) => return Err(e),
+            Err(Error::Io { context, source })
+                if matches!(source.raw_os_error(), Some(28 | 112)) =>
+            {
+                return Err(Error::Io { context, source })
+            }
             Err(_) => {
                 report.profiles_failed += 1;
                 report.warnings.push("snapshot failed".into());
@@ -130,6 +152,9 @@ pub fn collect(
             report.profiles_failed += 1;
             continue;
         }
+        let null_rows = reader.null_timestamp_rows()?;
+        report.rows_read += null_rows;
+        report.rows_rejected += null_rows;
         let spool = run.0.join(format!("{index}.jsonl"));
         let file = std::fs::File::create(&spool).map_err(|e| io("spool create", e))?;
         let mut writer = BufWriter::new(file);
@@ -150,7 +175,8 @@ pub fn collect(
                 let Some(n) = crate::normalize::normalize(
                     &visit.url,
                     seconds,
-                    chrono::FixedOffset::east_opt(config.offset_seconds()).unwrap(),
+                    chrono::FixedOffset::east_opt(config.offset_seconds()?)
+                        .ok_or_else(|| Error::Config("invalid UTC offset".into()))?,
                 ) else {
                     report.rows_rejected += 1;
                     continue;
@@ -214,6 +240,9 @@ pub fn collect(
         tx.execute("INSERT INTO checkpoints(source,cursor) VALUES(?1,?2) ON CONFLICT(source) DO UPDATE SET cursor=excluded.cursor",rusqlite::params![p.source,serde_json::to_string(&p.cursor).map_err(|e|Error::Export(e.to_string()))?])?;
     }
     tx.commit()?;
+    if crate::db::maintenance::optimize_due(&mut conn, chrono::Utc::now().timestamp()).is_err() {
+        report.warnings.push("weekly optimization deferred".into());
+    }
     report.write_ms = write_start.elapsed().as_millis();
     if conn
         .execute_batch("PRAGMA wal_checkpoint(PASSIVE)")

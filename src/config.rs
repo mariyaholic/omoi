@@ -133,8 +133,9 @@ impl Config {
         }
         Ok(())
     }
-    pub fn offset_seconds(&self) -> i32 {
-        parse_offset(&self.local_utc_offset).expect("validated config")
+    pub fn offset_seconds(&self) -> Result<i32> {
+        parse_offset(&self.local_utc_offset)
+            .ok_or_else(|| Error::Config("invalid UTC offset".into()))
     }
 }
 fn parse_offset(text: &str) -> Option<i32> {

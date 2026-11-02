@@ -37,6 +37,25 @@ enum Commands {
     },
     /// Show catalogue and browser locations without creating files.
     Paths,
+    /// Install, inspect or remove the optional Windows hourly/logon task.
+    #[command(hide = !cfg!(windows))]
+    Schedule {
+        #[command(subcommand)]
+        command: Schedule,
+    },
+    /// Explainable local suggestions from recorded history and available metadata.
+    Recommend {
+        #[arg(long)]
+        item: Option<i64>,
+        #[arg(long, default_value_t = 1200)]
+        seconds: i64,
+    },
+}
+#[derive(Subcommand)]
+enum Schedule {
+    Install,
+    Remove,
+    Status,
 }
 #[derive(Subcommand)]
 enum Database {
@@ -44,7 +63,14 @@ enum Database {
     Info,
 }
 pub fn run() -> u8 {
-    let cli = Cli::parse();
+    run_from(std::env::args_os())
+}
+pub fn run_from<I, T>(args: I) -> u8
+where
+    I: IntoIterator<Item = T>,
+    T: Into<std::ffi::OsString> + Clone,
+{
+    let cli = Cli::parse_from(args);
     match execute(cli) {
         Ok(code) => code,
         Err(Error::Io { source, .. }) if source.kind() == std::io::ErrorKind::BrokenPipe => 0,
@@ -69,6 +95,25 @@ fn execute(cli: Cli) -> Result<u8> {
     let paths = Paths::resolve(&env)?;
     let mut config = Config::load(&paths.config)?;
     match cli.command {
+        Commands::Schedule { command } => {
+            crate::scheduler::execute(
+                match command {
+                    Schedule::Install => "install",
+                    Schedule::Remove => "remove",
+                    Schedule::Status => "status",
+                },
+                &paths.home,
+            )?;
+        }
+        Commands::Recommend { item, seconds } => {
+            let c = crate::db::open(&paths.db, &config, false)?;
+            output(&crate::recommend::shelves(
+                &c,
+                chrono::Utc::now().timestamp(),
+                item,
+                seconds,
+            )?)?;
+        }
         Commands::Paths => {
             output(
                 &serde_json::json!({"home":paths.home,"config":paths.config,"db":paths.db,"logs":paths.logs,"tmp":paths.tmp,"thumbs":paths.thumbs,"browser_roots":crate::readers::discover::roots(&env)?}),
@@ -93,7 +138,19 @@ fn execute(cli: Cli) -> Result<u8> {
                         .collect()
                 };
             }
-            let report = crate::collect::collect(&config, &paths, &env, dry_run)?;
+            let result = crate::collect::collect(&config, &paths, &env, dry_run);
+            if !dry_run {
+                let code = match &result {
+                    Ok(r) if r.profiles_failed > 0 => 3,
+                    Ok(_) => 0,
+                    Err(e) => e.exit_code(),
+                };
+                if crate::logging::record(&paths.logs, &config, result.as_ref().ok(), code).is_err()
+                {
+                    eprintln!("Omoi file logging unavailable; collection result follows");
+                }
+            }
+            let report = result?;
             let code = if report.profiles_failed > 0 { 3 } else { 0 };
             output(&report)?;
             return Ok(code);

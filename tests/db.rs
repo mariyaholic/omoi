@@ -117,3 +117,12 @@ fn info_reports_counts() {
     assert_eq!(info.counts.len(), 7);
     assert!(info.fts5);
 }
+
+#[test]
+fn weekly_optimize_is_idempotent() {
+    let mut c = conn();
+    db::migrate(&mut c).unwrap();
+    assert!(db::maintenance::optimize_due(&mut c, 1000000).unwrap());
+    assert!(!db::maintenance::optimize_due(&mut c, 1000001).unwrap());
+    assert!(db::maintenance::optimize_due(&mut c, 1000000 + 7 * 86400).unwrap());
+}

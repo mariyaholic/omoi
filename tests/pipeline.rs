@@ -92,6 +92,57 @@ fn cli_surface() {
 }
 
 #[test]
+fn malformed_rows_are_counted_and_checkpointed() {
+    let f = Fixture::new();
+    f.setup();
+    let c = Connection::open(f.0.join("History")).unwrap();
+    c.execute(
+        "INSERT INTO urls VALUES(3,?1,'oversized')",
+        ["x".repeat(8193)],
+    )
+    .unwrap();
+    c.execute_batch("INSERT INTO visits VALUES(4,3,13300003000000000,0),(5,1,NULL,0)")
+        .unwrap();
+    drop(c);
+    let r = f.run(&["collect"]);
+    assert!(r.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&r.stdout).unwrap();
+    assert_eq!(report["rows_read"], 5);
+    assert_eq!(report["rows_rejected"], 3);
+    let r = f.run(&["collect"]);
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&r.stdout).unwrap()["profiles_unchanged"],
+        1
+    );
+}
+
+#[test]
+fn concurrent_collectors_never_duplicate() {
+    let f = Fixture::new();
+    f.setup();
+    std::thread::scope(|scope| {
+        let a = scope.spawn(|| f.run(&["collect"]));
+        let b = scope.spawn(|| f.run(&["collect"]));
+        for r in [a.join().unwrap(), b.join().unwrap()] {
+            assert!(
+                matches!(r.status.code(), Some(0 | 4)),
+                "{}",
+                String::from_utf8_lossy(&r.stderr)
+            );
+        }
+    });
+    let r = f.run(&["collect"]);
+    assert!(r.status.success());
+    let e = f.run(&["export", "--json"]);
+    assert_eq!(
+        serde_json::from_slice::<Vec<serde_json::Value>>(&e.stdout)
+            .unwrap()
+            .len(),
+        1
+    );
+}
+
+#[test]
 fn collect_partial_and_export_no_clobber() {
     let f = Fixture::new();
     f.setup();
@@ -116,9 +167,12 @@ fn collect_partial_and_export_no_clobber() {
     );
     let db = Connection::open(f.0.join("home/history.sqlite")).unwrap();
     assert_eq!(
-        db.query_row("SELECT count(*) FROM checkpoints", [], |r| r
-            .get::<_, i64>(0))
-            .unwrap(),
+        db.query_row(
+            "SELECT count(*) FROM checkpoints WHERE source NOT LIKE 'maintenance:%'",
+            [],
+            |r| r.get::<_, i64>(0)
+        )
+        .unwrap(),
         1
     );
     drop(db);

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use url::Url;
+mod local;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ItemKey {
     pub platform: String,
@@ -74,24 +75,8 @@ pub fn normalize(raw: &str, unix_s: i64, offset: chrono::FixedOffset) -> Option<
         if !host.is_empty() && host != "localhost" {
             return None;
         }
-        let mut local = u.clone();
-        local.set_query(None);
-        local.set_fragment(None);
-        let ext = path.rsplit('.').next()?.to_ascii_lowercase();
-        if ![
-            "mp4", "mkv", "webm", "avi", "mov", "m4v", "mp3", "flac", "m4a", "ogg", "wav",
-        ]
-        .contains(&ext.as_str())
-        {
-            return None;
-        }
-        let mut path = local.path().to_owned();
-        if path.len() > 3 && path.as_bytes()[2] == b':' && path.as_bytes()[1].is_ascii_alphabetic()
-        {
-            path.replace_range(1..2, &path[1..2].to_ascii_uppercase());
-        }
         platform = "local";
-        id = format!("file:{path}");
+        id = local::identity(raw, &u)?;
     } else {
         if !["http", "https"].contains(&u.scheme()) {
             return None;

@@ -33,3 +33,24 @@ fn normalizer_url_vectors() {
     }
     assert!(count > 45);
 }
+#[test]
+fn local_path_case() {
+    let offset = chrono::FixedOffset::east_opt(28800).unwrap();
+    let key = |s| omoi::normalize::normalize(s, 0, offset).map(|v| v.key.external_id);
+    assert_eq!(
+        key("file:///c:/Video/%41%20Film.m%70%34"),
+        Some("file:/C:/Video/A%20Film.mp4".into())
+    );
+    assert_eq!(
+        key("file:///C:/Video/%e6%98%9f.mp4"),
+        key("file:///C:/Video/星.mp4")
+    );
+    assert_ne!(key("file:///C:/Video/A.mp4"), key("file:///C:/Video/a.mp4"));
+    assert!(key("file:///C:/Video/%ff.mp4").is_none());
+    assert!(key("file:relative.mp4").is_none());
+    assert!(key("file:////server/movie.mp4").is_none());
+    assert_eq!(
+        key("file:///C:/Video/%2520.mp4"),
+        Some("file:/C:/Video/%2520.mp4".into())
+    );
+}

@@ -69,16 +69,21 @@ pub fn export(conn: &Connection, json: bool, writer: &mut dyn Write) -> Result<(
             "device",
             "approx_duration_s",
         ])
-        .map_err(|e| Error::Export(e.to_string()))?;
+        .map_err(csv_error)?;
         for row in rows {
-            csv.serialize(row?)
-                .map_err(|e| Error::Export(e.to_string()))?;
+            csv.serialize(row?).map_err(csv_error)?;
         }
         csv.flush().map_err(err)?;
     }
     drop(stmt);
     tx.commit()?;
     Ok(())
+}
+fn csv_error(error: csv::Error) -> Error {
+    match error.into_kind() {
+        csv::ErrorKind::Io(source) => err(source),
+        other => Error::Export(format!("{other:?}")),
+    }
 }
 fn err(source: std::io::Error) -> Error {
     Error::Io {

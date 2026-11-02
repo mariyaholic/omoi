@@ -80,6 +80,16 @@ pub struct Snapshot {
     pub fingerprint: Fingerprint,
 }
 pub fn copy(path: &Path, root: &Path, retries: usize) -> Result<Snapshot> {
+    copy_observed(path, root, retries, || {})
+}
+/// Filesystem race injection seam; the observer runs after each copy, before restat.
+#[doc(hidden)]
+pub fn copy_observed(
+    path: &Path,
+    root: &Path,
+    retries: usize,
+    mut observer: impl FnMut(),
+) -> Result<Snapshot> {
     for attempt in 0..retries {
         let before = fingerprint(path)?;
         let dir = TempDir::create(root)?;
@@ -97,6 +107,15 @@ pub fn copy(path: &Path, root: &Path, retries: usize) -> Result<Snapshot> {
             }
             Ok(())
         })();
+        let copied = match copied {
+            Err(Error::Io { context, source })
+                if matches!(source.raw_os_error(), Some(28 | 112)) =>
+            {
+                return Err(Error::Io { context, source })
+            }
+            other => other,
+        };
+        observer();
         if copied.is_ok() && fingerprint(path)? == before {
             return Ok(Snapshot {
                 dir,

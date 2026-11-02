@@ -9,6 +9,18 @@ pub struct SqliteReader {
     _snapshot: Snapshot,
 }
 impl SqliteReader {
+    pub fn null_timestamp_rows(&self) -> Result<u64> {
+        let (table, time) = if self.browser == Browser::Firefox {
+            ("moz_historyvisits", "visit_date")
+        } else {
+            ("visits", "visit_time")
+        };
+        Ok(self.conn.query_row(
+            &format!("SELECT count(*) FROM {table} WHERE {time} IS NULL"),
+            [],
+            |r| r.get(0),
+        )?)
+    }
     pub fn open(id: SourceId, browser: Browser, snapshot: Snapshot) -> Result<Self> {
         let conn = Connection::open_with_flags(&snapshot.path, OpenFlags::SQLITE_OPEN_READ_WRITE)?;
         conn.query_row("SELECT count(*) FROM sqlite_master", [], |r| {

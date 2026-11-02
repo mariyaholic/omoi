@@ -10,8 +10,11 @@ pub mod db;
 pub mod dedupe;
 pub mod error;
 pub mod export;
+pub mod logging;
 pub mod normalize;
 pub mod paths;
 pub mod readers;
+pub mod recommend;
+pub mod scheduler;
 
 pub use error::{Error, Result};

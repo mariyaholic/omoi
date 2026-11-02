@@ -1,3 +1,4 @@
+pub mod maintenance;
 pub mod migrations;
 pub mod schema;
 use crate::{config::Config, Error, Result};
@@ -55,6 +56,12 @@ pub struct Info {
     pub fts5: bool,
 }
 pub fn info(conn: &Connection) -> Result<Info> {
+    let tx = conn.unchecked_transaction()?;
+    let result = info_snapshot(&tx)?;
+    tx.commit()?;
+    Ok(result)
+}
+fn info_snapshot(conn: &Connection) -> Result<Info> {
     let mut counts = std::collections::BTreeMap::new();
     for table in [
         "items",

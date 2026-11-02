@@ -100,7 +100,18 @@ fn add(d: &mut Discovery, browser: Browser, name: String, path: PathBuf, explici
 }
 fn firefox(root: &Path, d: &mut Discovery) {
     let ini = root.join("profiles.ini");
-    match std::fs::read_to_string(ini) {
+    let read = (|| -> std::io::Result<String> {
+        use std::io::Read;
+        let mut text = String::new();
+        std::fs::File::open(ini)?
+            .take(65537)
+            .read_to_string(&mut text)?;
+        if text.len() > 65536 {
+            return Err(std::io::Error::other("profile index too large"));
+        }
+        Ok(text)
+    })();
+    match read {
         Ok(text) => {
             let (mut active, mut name, mut path, mut relative) =
                 (false, String::new(), String::new(), true);
@@ -188,7 +199,9 @@ pub fn discover(config: &Config, env: &PathEnvironment) -> Result<Discovery> {
         }
     }
     for raw in &config.profile_paths {
-        let (b, path) = raw.split_once(':').expect("validated configuration");
+        let (b, path) = raw
+            .split_once(':')
+            .ok_or_else(|| crate::Error::Config("invalid profile selector".into()))?;
         if let Some(browser) = config.browsers.iter().find(|b2| b2.name() == b) {
             let path = PathBuf::from(path);
             let name = path.parent().map(basename).unwrap_or_default();

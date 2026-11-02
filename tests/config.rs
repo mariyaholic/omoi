@@ -74,6 +74,6 @@ fn config_comments_in_strings() {
     )
     .unwrap();
     assert_eq!(c.profile_excludes, ["chrome:work#1"]);
-    assert_eq!(c.offset_seconds(), -12600);
+    assert_eq!(c.offset_seconds().unwrap(), -12600);
     assert!(Config::parse(&" ".repeat(65537)).is_err());
 }

@@ -42,7 +42,13 @@ pub fn export(conn: &Connection, json: bool, writer: &mut dyn Write) -> Result<(
                 writer.write_all(b",").map_err(err)?;
             }
             first = false;
-            serde_json::to_writer(&mut *writer, &row?).map_err(|e| Error::Export(e.to_string()))?;
+            serde_json::to_writer(&mut *writer, &row?).map_err(|e| {
+                if e.io_error_kind() == Some(std::io::ErrorKind::BrokenPipe) {
+                    err(std::io::Error::from(std::io::ErrorKind::BrokenPipe))
+                } else {
+                    Error::Export(e.to_string())
+                }
+            })?;
         }
         writer.write_all(b"]\n").map_err(err)?;
     } else {

@@ -1,9 +1,9 @@
 # omoi
 
 Local, low-overhead watch history for the PC: reads browser history (Chrome, Edge, Brave,
-Firefox) into one SQLite file, with time spent, cataloguing and recommendations planned.
+Firefox) into one SQLite file, with optional hourly collection and explainable local suggestions.
 
-Status: a working command-line baseline is implemented and fixture-tested on Windows GNU. It collects video visits into SQLite and exports CSV/JSON. Full M0 acceptance, automatic scheduling and the UI remain unfinished. See `PROGRESS.md` for exact evidence and remaining work.
+Status: a working command-line baseline collects video visits into SQLite and exports CSV/JSON. Windows scheduling and local recommendation queries are implemented. A graphical UI and measured playback capture remain future work. See `docs/m0-acceptance.md` for evidence and remaining acceptance gates.
 
 ## Use the command-line baseline
 
@@ -15,6 +15,7 @@ omoi paths
 omoi collect --dry-run
 omoi collect
 omoi db info
+omoi recommend --seconds 1200
 omoi export --csv --out watched.csv
 omoi export --json --out watched.json
 ```
@@ -31,11 +32,29 @@ profile_excludes = ["edge:Profile 2", "firefox:work"]
 local_utc_offset = "+08:00"
 ```
 
-Use an absolute `OMOI_HOME` to select a separate catalogue. This does not change browser discovery roots. Exit codes: 0 success; 1 fatal failure; 2 invalid arguments/config; 3 some profiles failed; 4 database/checkpoint contention. Collection prints a JSON summary; diagnostics contain no watched titles or URLs. No cookie access, enrichment requests or cloud sync are implemented.
+Use an absolute `OMOI_HOME` to select a separate catalogue. This does not change browser discovery roots. Exit codes: 0 success; 1 fatal failure; 2 invalid arguments/config; 3 some profiles failed; 4 database/checkpoint contention; 5 unsupported platform. Collection prints a JSON summary and writes bounded counter-only logs. No cookie access, enrichment requests or cloud sync are implemented.
+
+## Optional Windows automation
+
+Place **both** `omoi.exe` and `omoiw.exe` in a stable directory before installing. The task captures that directory and the resolved catalogue location. Moving either binary requires reinstalling the task. Installation is per-user and needs no administrator account.
+
+```text
+omoi schedule status
+omoi schedule install
+omoi schedule remove
+```
+
+`install` creates/replaces only `\Omoi\Collect`. It collects hourly and 30 seconds after logon, only while the user is logged on. It does not wake the PC, skips/stops on battery, ignores overlapping triggers, and has a ten-minute execution limit. The collector exits between runs. The GUI-subsystem helper avoids a flashing console window. Registration uses the built-in Windows PowerShell Task Scheduler COM adapter; PowerShell exits after installation/inspection/removal and is not part of hourly collection. No task is installed automatically by the build or tests.
+
+Status currently returns the task XML or an explicit not-installed message, not last-run health. Removal preserves the catalogue. Linux provides an unsupported-platform stub for these commands.
+
+## Local suggestions
+
+`omoi recommend --seconds 1200` returns explained JSON shelves. Add `--item ID` for similar items based on stored tags. Rediscover uses history older than 30 days; Fits your time needs known video duration; Continue watching needs actual recorded session position. Browser visits alone supply neither measured playback nor full video duration. Tags, durations and sessions have storage/query support, but this baseline does not yet provide their capture/editing flows. Empty shelves are expected. No model, paid API, remote recommendation service or continuous process is required.
 
 ## Current limits
 
-There is no graphical UI, automatic task installation, playback-time listener or recommendation engine yet. Snapshotting live SQLite files is best-effort. The CLI and synthetic Chrome/Firefox journeys are verified locally; real-profile tests, Linux execution, independent review and resource budgets are still pending. Some strict M0 contract acceptance cases remain open in `PROGRESS.md`.
+There is no graphical UI or playback-time listener yet. Snapshotting live SQLite files is best-effort. Fixture-based CLI journeys and hosted Windows/Linux verification support trying the baseline; they do not establish acceptance on personal browser profiles. Real retained-week import, installed scheduler smoke, independent review and remaining strict contract cases stay open. Resources are measured on synthetic data; see `docs/m0-acceptance.md`. UI direction is in `docs/ui-recommendations.md`.
 
 - Design: `docs/watch-history-architecture.md` (§0 holds Maria's decisions)
 - Review: `docs/omoi-design-review.md`

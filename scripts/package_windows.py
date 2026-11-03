@@ -14,6 +14,8 @@ import subprocess
 import tempfile
 import zipfile
 
+from verify_desktop import remove_closed_profile
+
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
@@ -37,7 +39,7 @@ def main():
     tracked=subprocess.check_output(['git','ls-files','-z'],cwd=repo).decode().split('\0')
     assert 'docs/headless-acceptance-20261103.md' in tracked,'Track the acceptance record before packaging'
     content={}
-    for name in ('omoi.exe','omoiw.exe'):
+    for name in ('omoi.exe','omoiw.exe','omoi-desktop.exe','WebView2Loader.dll'):
         content[name]=(args.bin_dir/name).read_bytes()
     for name in ('Run Omoi.cmd','Run Playback.cmd','README.md'):
         content[name]=(repo/'packaging'/name).read_bytes()
@@ -74,6 +76,9 @@ def main():
             assert run.returncode==0,run.stderr
             if command==['db','info']:
                 assert json.loads(run.stdout)['counts']['items']==0
+        desktop=subprocess.run([str(extracted/'omoi-desktop.exe'),'--check'],env=env,cwd=extracted,capture_output=True,text=True,timeout=45,creationflags=subprocess.CREATE_NO_WINDOW)
+        assert desktop.returncode==0,desktop.stderr
+        remove_closed_profile(home/'webview')
         # Publish only after all content and portability checks pass.
         with args.out.open('xb') as target:
             target.write(archive.read_bytes())

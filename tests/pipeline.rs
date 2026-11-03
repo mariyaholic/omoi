@@ -261,3 +261,89 @@ fn firefox_wal_snapshot() {
     );
     drop(c);
 }
+
+#[test]
+fn missing_browser_table_is_partial_without_source_mutation() {
+    let f = Fixture::new();
+    f.setup();
+    let path = f.0.join("empty-places.sqlite");
+    let c = Connection::open(&path).unwrap();
+    c.execute_batch("CREATE TABLE moz_historyvisits(id,place_id,visit_date)")
+        .unwrap();
+    drop(c);
+    let before = std::fs::read(&path).unwrap();
+    let cfg = f.0.join("home/config.toml");
+    let text = std::fs::read_to_string(&cfg).unwrap().replace(
+        "]",
+        &format!(
+            ",{}]",
+            serde_json::to_string(&format!("firefox:{}", path.display())).unwrap()
+        ),
+    );
+    std::fs::write(cfg, text).unwrap();
+    let output = f.run(&["collect"]);
+    assert_eq!(output.status.code(), Some(3));
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["profiles_ok"], 1);
+    assert_eq!(report["profiles_failed"], 1);
+    assert_eq!(report["views_inserted"], 1);
+    assert_eq!(before, std::fs::read(path).unwrap());
+    let c = Connection::open(f.0.join("home/history.sqlite")).unwrap();
+    assert_eq!(
+        c.query_row(
+            "SELECT count(*) FROM checkpoints WHERE source NOT LIKE 'maintenance:%'",
+            [],
+            |r| r.get::<_, i64>(0)
+        )
+        .unwrap(),
+        1
+    );
+}
+
+#[test]
+fn collect_busy_exits_and_retry_preserves_checkpoints() {
+    let f = Fixture::new();
+    f.setup();
+    let cfg = f.0.join("home/config.toml");
+    let text = std::fs::read_to_string(&cfg).unwrap() + "\nbusy_timeout_ms=50\n";
+    std::fs::write(cfg, text).unwrap();
+    assert!(f.run(&["db", "migrate"]).status.success());
+    let c = Connection::open(f.0.join("home/history.sqlite")).unwrap();
+    c.execute_batch("BEGIN IMMEDIATE").unwrap();
+    let blocked = f.run(&["collect"]);
+    assert_eq!(
+        blocked.status.code(),
+        Some(4),
+        "{}",
+        String::from_utf8_lossy(&blocked.stderr)
+    );
+    for table in ["items", "views", "checkpoints"] {
+        assert_eq!(
+            c.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+    }
+    c.execute_batch("ROLLBACK").unwrap();
+    let retry = f.run(&["collect"]);
+    assert!(retry.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&retry.stdout).unwrap();
+    assert_eq!(report["views_inserted"], 1);
+}
+
+#[test]
+fn collect_log_failure_keeps_result_and_owned_lock() {
+    let f = Fixture::new();
+    f.setup();
+    let logs = f.0.join("home/logs");
+    std::fs::create_dir(&logs).unwrap();
+    let lock = logs.join("logging.lock");
+    std::fs::write(&lock, b"owned by another writer").unwrap();
+    let output = f.run(&["collect"]);
+    assert!(output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("file logging unavailable"));
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["views_inserted"], 1);
+    assert_eq!(std::fs::read(lock).unwrap(), b"owned by another writer");
+}

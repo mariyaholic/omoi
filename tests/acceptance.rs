@@ -78,6 +78,51 @@ fn dedupe_richness_approx_max_and_rollback() {
         .unwrap();
     assert_eq!(n, 0);
 }
+
+#[test]
+fn dedupe_inclusive_boundaries_and_tie() {
+    for (distance, expected_views) in [(1799, 1), (1800, 1), (1801, 2), (-1800, 1), (-1801, 2)] {
+        let mut c = Connection::open_in_memory().unwrap();
+        db::migrate(&mut c).unwrap();
+        let tx = c.transaction().unwrap();
+        dedupe::ingest(&tx, &candidate("firefox", "Title", 0, 10)).unwrap();
+        dedupe::ingest(&tx, &candidate("chrome", "Better", distance, 20)).unwrap();
+        let count: i64 = tx
+            .query_row("SELECT count(*) FROM views", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(count, expected_views, "distance {distance}");
+        assert_eq!(
+            tx.query_row("SELECT started_at FROM views WHERE id=1", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+    }
+    let mut c = Connection::open_in_memory().unwrap();
+    db::migrate(&mut c).unwrap();
+    let tx = c.transaction().unwrap();
+    for at in [0, 3600] {
+        dedupe::ingest(&tx, &candidate("firefox", "Title", at, 10)).unwrap();
+    }
+    dedupe::ingest(&tx, &candidate("edge", "Richer", 1800, 20)).unwrap();
+    let rows = tx
+        .prepare("SELECT started_at,source,approx_duration_s FROM views ORDER BY started_at")
+        .unwrap()
+        .query_map([], |r| {
+            Ok((
+                r.get::<_, i64>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, i64>(2)?,
+            ))
+        })
+        .unwrap()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    assert_eq!(
+        rows,
+        vec![(0, "edge".into(), 20), (3600, "firefox".into(), 10)]
+    );
+}
 #[test]
 fn sessionize_empty_inbox() {
     assert!(omoi::sessionize::available());

@@ -70,6 +70,9 @@ pub fn serve(paths: Paths) -> Result<()> {
     std::fs::create_dir_all(&paths.home).map_err(io)?;
     let token = token(&paths.home)?;
     let mut c = crate::db::open(&paths.db, &config, true)?;
+    // The append-only listener has a smaller resident budget than the collector.
+    // A full inbox must not fill the collector's 2 MiB page cache here.
+    c.pragma_update(None, "cache_size", -256)?;
     crate::db::migrate(&mut c)?;
     // Successful acknowledgements survive a power failure, not just a process restart.
     c.pragma_update(None, "synchronous", "FULL")?;

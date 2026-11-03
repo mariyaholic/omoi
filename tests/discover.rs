@@ -69,6 +69,19 @@ fn firefox_ini_paths() {
         .iter()
         .any(|p| p.path == a.canonicalize().unwrap() && p.name == "work"));
 }
+
+#[test]
+fn firefox_uninitialized_profile_is_reported_as_skipped() {
+    let f = Fixture::new();
+    let ini = f.file(".mozilla/firefox/profiles.ini");
+    std::fs::create_dir_all(f.0.join(".mozilla/firefox/Profiles/empty")).unwrap();
+    f.file(".mozilla/firefox/Profiles/active/places.sqlite");
+    std::fs::write(ini,"[Profile0]\nName=empty\nIsRelative=1\nPath=Profiles/empty\n[Profile1]\nName=active\nIsRelative=1\nPath=Profiles/active\n").unwrap();
+    let d = discover(&Config::default(), &f.env()).unwrap();
+    assert_eq!(d.profiles.len(), 1);
+    assert!(d.failures.is_empty());
+    assert!(d.warnings.iter().any(|w| w.contains("no history database")));
+}
 #[test]
 fn discovery_missing_and_denied() {
     let f = Fixture::new();

@@ -115,31 +115,40 @@ fn firefox(root: &Path, d: &mut Discovery) {
         Ok(text) => {
             let (mut active, mut name, mut path, mut relative) =
                 (false, String::new(), String::new(), true);
-            let flush =
-                |d: &mut Discovery, active: bool, name: &str, path: &str, relative: bool| {
-                    if active && !path.is_empty() {
-                        let dir = if relative {
-                            root.join(path)
-                        } else {
-                            PathBuf::from(path)
-                        };
-                        if dir.is_absolute() {
-                            add(
-                                d,
-                                Browser::Firefox,
-                                if name.is_empty() {
-                                    basename(&dir)
-                                } else {
-                                    name.to_owned()
-                                },
-                                dir.join("places.sqlite"),
-                                true,
-                            );
-                        } else {
-                            d.failures.push("invalid Firefox profile path".into());
+            let flush = |d: &mut Discovery,
+                         active: bool,
+                         name: &str,
+                         path: &str,
+                         relative: bool| {
+                if active && !path.is_empty() {
+                    let dir = if relative {
+                        root.join(path)
+                    } else {
+                        PathBuf::from(path)
+                    };
+                    if dir.is_absolute() {
+                        if matches!(std::fs::metadata(dir.join("places.sqlite")), Err(e) if e.kind() == std::io::ErrorKind::NotFound)
+                        {
+                            d.warnings
+                                .push("Firefox profile has no history database; skipped".into());
+                            return;
                         }
+                        add(
+                            d,
+                            Browser::Firefox,
+                            if name.is_empty() {
+                                basename(&dir)
+                            } else {
+                                name.to_owned()
+                            },
+                            dir.join("places.sqlite"),
+                            true,
+                        );
+                    } else {
+                        d.failures.push("invalid Firefox profile path".into());
                     }
-                };
+                }
+            };
             for line in text.lines().chain(std::iter::once("[end]")) {
                 let line = line.trim();
                 if line.starts_with('[') && line.ends_with(']') {

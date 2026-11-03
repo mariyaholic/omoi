@@ -38,12 +38,91 @@ def launch(binary, env, idle=120, port=0):
         raise
 
 
+def browser_memory(browser):
+    if os.name!='nt':
+        return {}
+    from ctypes import wintypes
+    from measure import Memory
+
+    class MemoryEx(Memory):
+        _fields_=[('private_usage',ctypes.c_size_t)]
+
+    kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+    psapi=ctypes.WinDLL('psapi',use_last_error=True)
+    kernel.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD]
+    kernel.OpenProcess.restype=wintypes.HANDLE
+    kernel.CloseHandle.argtypes=[wintypes.HANDLE]
+    psapi.GetProcessMemoryInfo.argtypes=[wintypes.HANDLE,ctypes.POINTER(MemoryEx),wintypes.DWORD]
+    processes=browser.new_browser_cdp_session().send('SystemInfo.getProcessInfo')['processInfo']
+    readings=[]
+    for p in processes:
+        handle=kernel.OpenProcess(0x410,False,int(p['id']))
+        if not handle:
+            continue
+        try:
+            memory=MemoryEx()
+            memory.cb=ctypes.sizeof(memory)
+            if psapi.GetProcessMemoryInfo(handle,ctypes.byref(memory),memory.cb):
+                readings.append({'type':p['type'],'working_set_bytes':memory.working,'private_bytes':memory.private_usage})
+        finally:
+            kernel.CloseHandle(handle)
+    return {'processes':readings,'reported_processes':len(processes),'measured_processes':len(readings),'sum_private_bytes':sum(p['private_bytes'] for p in readings),'scope':'isolated headless Edge processes reported by CDP; instantaneous private bytes, not normal browser incremental cost; working sets share pages'}
+
+
+def verify_zoom(playwright, root, launch_url, out):
+    """Use actual browser tab zoom, not CSS zoom or pinch-scale emulation."""
+    extension=root/'zoom-extension'
+    extension.mkdir()
+    (extension/'manifest.json').write_text(json.dumps({'manifest_version':3,'name':'Omoi isolated zoom test','version':'1.0','host_permissions':['http://127.0.0.1/*'],'background':{'service_worker':'worker.js'}}),encoding='utf-8')
+    (extension/'worker.js').write_text('chrome.runtime.onInstalled.addListener(()=>{});',encoding='utf-8')
+    context=playwright.chromium.launch_persistent_context(str(root/'zoom-browser'),channel='chromium',headless=True,
+        viewport={'width':1280,'height':960},args=[f'--disable-extensions-except={extension}',f'--load-extension={extension}'])
+    checks=[]
+    try:
+        worker=context.service_workers[0] if context.service_workers else context.wait_for_event('serviceworker')
+        page=context.new_page()
+        page.goto(launch_url)
+        expect(page.locator('.history-row')).to_have_count(50)
+        tab=worker.evaluate("async()=>{const tabs=await chrome.tabs.query({url:'http://127.0.0.1/*'});return tabs[0].id}")
+        for name in ('Uika','Confluence','Panel','Mariyaholic-98','Argonaut Oak'):
+            worker.evaluate('([tab,zoom])=>chrome.tabs.setZoom(tab,zoom)',[tab,1])
+            page.locator('nav [data-page="settings"]').click()
+            page.get_by_role('button',name=name,exact=True).click()
+            for zoom in (2,4):
+                worker.evaluate('([tab,zoom])=>chrome.tabs.setZoom(tab,zoom)',[tab,zoom])
+                page.wait_for_function('(width)=>Math.abs(innerWidth-width)<=2',arg=1280/zoom)
+                for screen in ('history','suggestions','sources','settings'):
+                    page.locator(f'nav [data-page="{screen}"]').click()
+                    expect(page.locator('#content')).to_have_attribute('aria-busy','false')
+                    assert not page.evaluate('document.documentElement.scrollWidth>innerWidth'),(name,zoom,screen)
+                    checks.append({'theme':name,'zoom':zoom,'screen':screen,'css_viewport_width':page.evaluate('innerWidth')})
+                page.locator('nav [data-page="history"]').click()
+                page.locator('.history-row').first.click()
+                page.get_by_role('button',name='Edit metadata and tags',exact=True).click()
+                assert not page.locator('#detail').evaluate('e=>e.scrollWidth>e.clientWidth'),(name,zoom,'edit-dialog')
+                page.get_by_label('Title',exact=True).fill('Zoom fixture')
+                page.get_by_role('button',name='Save changes',exact=True).click()
+                expect(page.locator('#message')).to_have_text('Item saved.')
+                if zoom==4:
+                    page.screenshot(path=str(out/f'zoom-400-{name.lower()}.png'))
+                checks.append({'theme':name,'zoom':zoom,'screen':'edit-dialog','action':'saved'})
+        return {'result':'pass','method':'chrome.tabs.setZoom in disposable headless Chromium; actual 200% and 400% browser zoom','checks':checks}
+    finally:
+        context.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument('--axe-file',type=Path,help='Optional local axe-core script for WCAG 2 A/AA and 2.1 AA audit')
+    parser.add_argument('--zoom',action='store_true',help='Also test actual 200/400 percent browser zoom using bundled Chromium')
     args = parser.parse_args()
     binary = args.binary.resolve()
+    audits=[]
+    browser_resources={}
+    zoom_report=None
+    axe_source=args.axe_file.read_text(encoding='utf-8') if args.axe_file else None
     args.out.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="omoi-ui-") as temporary:
         root = Path(temporary)
@@ -117,6 +196,8 @@ def main():
             with sync_playwright() as pw:
                 browser = pw.chromium.launch(channel="msedge", headless=True)
                 page = browser.new_page(viewport={"width": 1440, "height": 1000})
+                page.wait_for_timeout(2000)
+                before_app=browser_memory(browser)
                 page.set_default_timeout(10000)
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.on("response", lambda r: responses.append((urlsplit(r.url).path, r.status)))
@@ -145,6 +226,8 @@ def main():
                     print(json.dumps({"message":page.locator("#message").inner_text(), "content":page.locator("#content").inner_text()[:1000], "errors":errors,"server_exit":proc.poll(),"responses":responses}), flush=True)
                     raise
                 expect(page.locator(".result-count")).to_have_text("10001 items")
+                page.wait_for_timeout(2000)
+                before_audit=browser_memory(browser)
                 first = page.locator(".history-row").first.inner_text()
                 page.get_by_role("button", name="Next", exact=True).click()
                 expect(page.locator(".pagination")).to_contain_text("51–100")
@@ -195,7 +278,7 @@ def main():
                 page.get_by_role('button', name='Process playback', exact=True).click()
                 expect(page.locator('#playback-output')).to_contain_text('0 events processed')
                 page.evaluate('window.showSaveFilePicker=undefined')
-                with page.expect_download() as downloaded:
+                with page.expect_download(timeout=60000) as downloaded:
                     page.get_by_role('button', name='Export JSON', exact=True).click()
                 exported = json.loads(Path(downloaded.value.path()).read_text(encoding='utf-8'))
                 assert len(exported) == 10000
@@ -216,6 +299,10 @@ def main():
                             page.locator(f'nav [data-page="{screen}"]').click()
                             expect(page.locator("#content")).to_have_attribute("aria-busy", "false")
                             assert not page.evaluate("document.documentElement.scrollWidth > innerWidth"), f"{name} / {screen} overflow at {width}"
+                            if axe_source and width==1440:
+                                page.evaluate(axe_source)
+                                audit=page.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return {violations:r.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))})),incomplete:r.incomplete.map(v=>v.id)}}")
+                                audits.append({'theme':name,'screen':screen,**audit})
                             if width != 320:
                                 page.screenshot(path=str(args.out / f"{screen}-{skin}-{width}.png"))
                         page.locator('nav [data-page="history"]').click()
@@ -223,16 +310,23 @@ def main():
                         page.locator(".history-row").first.click()
                         expect(page.locator("#detail")).to_be_visible()
                         assert not page.locator("#detail").evaluate("e=>e.scrollWidth>e.clientWidth"), f"{skin} detail overflow"
+                        if axe_source and width==1440:
+                            page.get_by_role('button',name='Edit metadata and tags',exact=True).click()
+                            audit=page.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return {violations:r.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))})),incomplete:r.incomplete.map(v=>v.id)}}")
+                            audits.append({'theme':name,'screen':'edit-dialog',**audit})
                         page.keyboard.press("Escape")
                 page.goto("about:blank")
                 page.goto(launch_url)
                 expect(page.locator("body")).to_have_attribute("data-skin", "oak")
                 expect(page.locator(".history-row")).to_have_count(50)
-                page.reload()
-                expect(page.locator("#message")).to_contain_text("Open the launch URL")
                 assert not errors, errors
                 assert not external, external
+                browser_resources={'before_app':before_app,'catalogue_before_audit':before_audit,'after_journey':browser_memory(browser),'axe_loaded':bool(axe_source)}
+                page.reload()
+                expect(page.locator("#message")).to_contain_text("Open the launch URL")
                 browser.close()
+                if args.zoom:
+                    zoom_report=verify_zoom(pw,root,launch_url,args.out)
             latency = []
             for _ in range(20):
                 start = time.perf_counter()
@@ -259,8 +353,9 @@ def main():
                 memory.cb = ctypes.sizeof(memory)
                 assert psapi.GetProcessMemoryInfo(int(proc._handle), ctypes.byref(memory), memory.cb)
                 resources = {"server_working_set_bytes": memory.working, "server_peak_working_set_bytes": memory.peak_working,
-                             "server_idle_cpu_ms_over_3s": cpu() - before, "browser_memory": "not measured"}
-            report = {"result": "pass", "fixture_items_after_delete": 10000,
+                             "server_idle_cpu_ms_over_3s": cpu() - before, "browser_memory": "see browser_resources"}
+            report = {"result": "failed" if any(a['violations'] for a in audits) else "pass", "fixture_items_after_delete": 10000,
+                      'axe_audits':audits,'browser_resources':browser_resources,'browser_zoom':zoom_report,
                       "widths": [1440, 375, 320], "themes": ["Uika", "Confluence", "Panel", "Mariyaholic-98", "Argonaut Oak"],
                       "api_ms_median": statistics.median(latency), "api_ms_max": max(latency),
                       "warm_history_click_to_rows_ms_median": statistics.median(warm), "warm_history_click_to_rows_ms_max": max(warm),
@@ -278,6 +373,8 @@ def main():
                 idle_proc.wait()
         (args.out / "verification.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
         print(json.dumps(report, indent=2))
+        if any(a['violations'] for a in audits):
+            raise SystemExit('Accessibility violations found; see saved receipt')
 
 
 if __name__ == "__main__":

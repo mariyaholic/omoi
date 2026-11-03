@@ -13,6 +13,16 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Commands {
+    /// Open the local catalogue UI. Prints a private launch URL; exits after idle timeout.
+    Ui {
+        /// Launch the default browser after the local server starts.
+        #[arg(long)]
+        open: bool,
+        #[arg(long, default_value_t = 43822)]
+        port: u16,
+        #[arg(long, default_value_t = 600, value_parser = clap::value_parser!(u64).range(1..=3600))]
+        idle_seconds: u64,
+    },
     /// Collect video visits from browser-history snapshots into the local catalogue.
     Collect {
         #[arg(long,value_parser=["chrome","edge","brave","firefox","all"])]
@@ -95,6 +105,13 @@ fn execute(cli: Cli) -> Result<u8> {
     let paths = Paths::resolve(&env)?;
     let mut config = Config::load(&paths.config)?;
     match cli.command {
+        Commands::Ui {
+            port,
+            idle_seconds,
+            open,
+        } => {
+            crate::ui::serve(paths, env, port, idle_seconds, open)?;
+        }
         Commands::Schedule { command } => {
             crate::scheduler::execute(
                 match command {

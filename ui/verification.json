@@ -1,0 +1,43 @@
+{
+  "result": "pass",
+  "fixture_items_after_delete": 10000,
+  "widths": [
+    1440,
+    375,
+    320
+  ],
+  "themes": [
+    "Uika",
+    "Confluence",
+    "Panel",
+    "Mariyaholic-98",
+    "Argonaut Oak"
+  ],
+  "api_ms_median": 49.609300040174276,
+  "api_ms_max": 60.63950003590435,
+  "warm_history_click_to_rows_ms_median": 113.29125001793727,
+  "warm_history_click_to_rows_ms_max": 128.20450006984174,
+  "resources": {
+    "server_working_set_bytes": 9830400,
+    "server_peak_working_set_bytes": 11550720,
+    "server_idle_cpu_ms_over_3s": 0.0,
+    "browser_memory": "not measured"
+  },
+  "javascript_errors": [],
+  "external_requests": [],
+  "checks": [
+    "empty catalogue",
+    "selected-profile collection excludes unchecked profile",
+    "10k item pagination",
+    "FTS/literal search",
+    "HTML escaping",
+    "delete cancel/confirm/FTS cascade",
+    "all screens and details in five themes",
+    "appearance persistence",
+    "token removed from URL",
+    "unauthenticated and foreign Host/Origin rejection",
+    "duplicate/oversized/chunked request rejection",
+    "port collision",
+    "idle shutdown"
+  ]
+}

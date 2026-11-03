@@ -78,13 +78,13 @@ def main():
         page.screenshot(path=str(args.out / "empty-desktop.png"))
         page.get_by_role("button", name="Load sample library").click()
         page.locator('nav [data-page="settings"]').click()
-        page.get_by_role("button", name="Mariyaholic Confluence", exact=True).click()
+        page.get_by_role("button", name="Confluence", exact=True).click()
         expect(page.locator("body")).to_have_css("background-color", "rgb(243, 239, 228)")
         page.get_by_role("button", name="Compact", exact=True).click()
         page.locator('nav [data-page="history"]').click()
         page.screenshot(path=str(args.out / "history-paper.png"))
         page.locator('nav [data-page="settings"]').click()
-        page.get_by_role("button", name="Mariyaholic Panel", exact=True).click()
+        page.get_by_role("button", name="Panel", exact=True).click()
         expect(page.locator("body")).to_have_css("background-color", "rgb(18, 20, 24)")
         page.locator('nav [data-page="history"]').click()
         page.screenshot(path=str(args.out / "history-panel.png"))
@@ -123,8 +123,8 @@ def main():
         expect(page.get_by_role("status")).to_contain_text("No browser history accessed.")
         themes = (
             ("Uika", "night", "rgb(11, 9, 19)"),
-            ("Mariyaholic Confluence", "paper", "rgb(243, 239, 228)"),
-            ("Mariyaholic Panel", "panel", "rgb(18, 20, 24)"),
+            ("Confluence", "paper", "rgb(243, 239, 228)"),
+            ("Panel", "panel", "rgb(18, 20, 24)"),
             ("Mariyaholic-98", "pc98", "rgb(18, 12, 36)"),
             ("Argonaut Oak", "oak", "rgb(7, 16, 13)"),
         )

@@ -4,6 +4,6 @@ The current CLI supports manual collection, safe CSV/JSON export, database inspe
 
 Pipeline: profile discovery → sidecar-aware private snapshot → bounded Chromium/Firefox pagination → platform normalization → per-profile spool → one transaction for dedupe and checkpoints → bounded summary logging. Unchanged source files skip reading; a checkpoint conflict gets one retry; weekly maintenance uses `PRAGMA optimize`, never automatic VACUUM.
 
-The current evidence and unresolved M0 gates are maintained in [M0 acceptance](docs/m0-acceptance.md). Use that report rather than historical progress entries or design targets as evidence. [README](README.md) gives commands and explains how to enable automation deliberately. [UI direction](docs/ui-recommendations.md) describes the recommended next interface.
+The [verification summary](docs/headless-acceptance-20261103.md) records completed headless verification. [README](README.md) gives commands and explains how to enable automation deliberately. The connected interface is documented in [UI instructions](ui/README.md).
 
-No private browser history or cookies were read during implementation. A build does not install a task. A passing synthetic suite does not replace the owner's retained-week import or an actual scheduled-launch smoke test. The PR remains draft until the open acceptance evidence is reviewed.
+The owner-authorized retained-week snapshot import and isolated scheduled-helper run have passed. A build does not install a task or enable collection. Further acceptance is deferred for the private development merge; the detailed follow-up is retained locally.

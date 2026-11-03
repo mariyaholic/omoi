@@ -8,8 +8,8 @@ Implemented: browser discovery/configuration, migrations and FTS, private main/W
 
 The embedded UI (`omoi ui --open`) uses the same catalogue and collector. It provides paginated history, FTS/literal search, filters, details, deletion, selected collection and local suggestions. All five themes remain. Edited/captured metadata, tags and playback now feed the local shelves; browser openings remain distinct from watching. RSS and TMDB are not connected.
 
-Current evidence, exact test totals, resource numbers and remaining gaps: [M0 acceptance](docs/m0-acceptance.md). No milestone is silently accepted based on code presence. In particular, retained personal-week import, live scheduler registration/launch, independent review and the unimplemented strict named cases stay open.
+Current measured results and completed verification are in the [verification summary](docs/headless-acceptance-20261103.md). The owner has deferred further acceptance for this private development merge. Detailed checklists and raw logs are retained locally; deferred work is not recorded as passed.
 
-Remaining work includes the acceptance matrix's unrun cases, live-player/manager compatibility, full accessibility review, long-duration playback resources and independent review. Capture remains opt-in. Current behavior and reproduction: [ui/README.md](ui/README.md).
+Capture remains opt-in. Current behavior and reproduction: [ui/README.md](ui/README.md).
 
 Local build environment: direct toolchain executables under `D:\rust\rustup\toolchains\stable-x86_64-pc-windows-gnu\bin`, MinGW under `D:\rust\mingw64\bin`, `CARGO_HOME=D:\rust\.cargo`, `CARGO_TARGET_DIR=D:\mariyaholic-build\omoi\target`. Use `cargo fmt --check`, `cargo clippy --locked --offline --all-targets -- -D warnings`, `cargo test --locked --offline --all-targets`, and `cargo build --locked --offline --release --bins --example synthetic`. Put the direct toolchain ahead of the older Cargo proxy on PATH.

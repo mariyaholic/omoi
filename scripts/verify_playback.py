@@ -81,8 +81,18 @@ def main():
             assert post(first, {'Host': 'evil.test'}) == 403
             assert post(first, method='OPTIONS') == 403
             assert post(first, method='GET', path='/api/history') == 403
+            invalid_status = post({})
+            with closing(sqlite3.connect(root/'history.sqlite')) as conn:
+                conn.execute("CREATE TRIGGER reject_fixture BEFORE INSERT ON raw_events BEGIN SELECT RAISE(ABORT,'fixture storage failure'); END")
+                conn.commit()
+            storage_status = post(first)
+            with closing(sqlite3.connect(root/'history.sqlite')) as conn:
+                conn.execute('DROP TRIGGER reject_fixture')
+                conn.commit()
+                assert conn.execute('SELECT count(*) FROM playback_receipts').fetchone() == (0,)
+            assert (invalid_status, storage_status) == (400, 503), (invalid_status, storage_status)
             try:
-                assert post(first | {'title': 'x' * 17000}) == 403
+                assert post(first | {'title': 'x' * 17000}) == 400
             except (ConnectionResetError,ConnectionAbortedError,BrokenPipeError,http.client.RemoteDisconnected):
                 pass  # Rejecting before consuming an oversized body can abort/reset the socket.
             with closing(sqlite3.connect(root/'history.sqlite')) as conn:

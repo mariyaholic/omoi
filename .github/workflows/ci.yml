@@ -47,3 +47,14 @@ jobs:
         run: python scripts/verify_playback.py --binary target/release/omoi${{ runner.os == 'Windows' && '.exe' || '' }}
       - name: Userscript capture semantics
         run: node --test tests/userscript.test.cjs
+      - name: Scheduler absence and cleanup transitions
+        if: runner.os == 'Windows'
+        run: python tests/scheduler_state.py
+      - name: Desktop profile cleanup transitions
+        run: python tests/desktop_state.py
+      - name: UI race test dependency
+        if: runner.os == 'Windows'
+        run: python -m pip install playwright==1.62.0
+      - name: UI request ownership transitions
+        if: runner.os == 'Windows'
+        run: python tests/ui_state.py

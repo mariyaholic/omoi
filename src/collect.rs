@@ -174,10 +174,12 @@ fn collect_once(
                 continue;
             }
         };
-        if reader.reset_if_replaced(&mut cursor).is_err() {
-            report.profiles_failed += 1;
-            continue;
-        }
+        // A changed browser database is not an append-only time stream: visits
+        // can be backfilled, replaced, or updated after their initial insert.
+        // Reconcile its snapshot in bounded pages; only the fingerprint skips
+        // a subsequent unchanged run. Dedupe and deletion cutoffs make replay safe.
+        cursor.last_native_us = i64::MIN;
+        cursor.last_visit_id = i64::MIN;
         let null_rows = reader.null_timestamp_rows()?;
         report.rows_read += null_rows;
         report.rows_rejected += null_rows;

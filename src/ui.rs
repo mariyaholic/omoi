@@ -60,6 +60,7 @@ pub fn catalogue(c: &Connection, q: &HistoryQuery) -> Result<Value> {
 
 pub fn delete_item(c: &mut Connection, id: i64) -> Result<bool> {
     let tx = c.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+    tx.execute("INSERT INTO deleted_items(platform,external_id,through) SELECT platform,external_id,?2 FROM items WHERE id=?1 ON CONFLICT(platform,external_id) DO UPDATE SET through=max(through,excluded.through)",params![id,chrono::Utc::now().timestamp()])?;
     let count = tx.execute("DELETE FROM items WHERE id=?", [id])?;
     tx.commit()?;
     Ok(count == 1)
@@ -140,6 +141,40 @@ pub(crate) fn request(
     max_header: usize,
     max_body: usize,
 ) -> std::io::Result<Request> {
+    request_cancellable(stream, max_header, max_body, None)
+}
+fn read_request(
+    stream: &mut TcpStream,
+    buffer: &mut [u8],
+    deadline: Instant,
+    stop: Option<&std::sync::atomic::AtomicBool>,
+) -> std::io::Result<usize> {
+    let deadline = deadline.min(Instant::now() + Duration::from_secs(2));
+    loop {
+        if stop.is_some_and(|s| s.load(std::sync::atomic::Ordering::Relaxed)) {
+            return Err(std::io::ErrorKind::Interrupted.into());
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(std::io::ErrorKind::TimedOut.into());
+        }
+        stream.set_read_timeout(Some(remaining.min(Duration::from_millis(100))))?;
+        match stream.read(buffer) {
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                ) => {}
+            result => return result,
+        }
+    }
+}
+fn request_cancellable(
+    stream: &mut TcpStream,
+    max_header: usize,
+    max_body: usize,
+    stop: Option<&std::sync::atomic::AtomicBool>,
+) -> std::io::Result<Request> {
     let invalid = || std::io::Error::new(std::io::ErrorKind::InvalidData, "invalid request");
     stream.set_read_timeout(Some(Duration::from_secs(2)))?;
     stream.set_write_timeout(Some(Duration::from_secs(5)))?;
@@ -157,8 +192,8 @@ pub(crate) fn request(
             return Err(invalid());
         }
         let mut buffer = [0u8; 2048];
-        let n = stream.read(&mut buffer)?;
-        if n == 0 {
+        let n = read_request(stream, &mut buffer, deadline, stop)?;
+        if n == 0 || Instant::now() >= deadline {
             return Err(invalid());
         }
         bytes.extend_from_slice(&buffer[..n]);
@@ -211,8 +246,8 @@ pub(crate) fn request(
         if Instant::now() >= deadline {
             return Err(invalid());
         }
-        let n = stream.read(&mut body[read..])?;
-        if n == 0 {
+        let n = read_request(stream, &mut body[read..], deadline, stop)?;
+        if n == 0 || Instant::now() >= deadline {
             return Err(invalid());
         }
         read += n;
@@ -233,8 +268,29 @@ fn response(stream: &mut TcpStream, status: u16, mime: &str, data: &[u8]) -> std
         404 => "Not Found",
         _ => "Service Unavailable",
     };
-    write!(stream,"HTTP/1.1 {status} {reason}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nCross-Origin-Resource-Policy: same-origin\r\nContent-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'\r\n\r\n",data.len())?;
-    stream.write_all(data)
+    let header=format!("HTTP/1.1 {status} {reason}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nCross-Origin-Resource-Policy: same-origin\r\nContent-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'\r\n\r\n",data.len());
+    let deadline = Instant::now() + Duration::from_secs(30);
+    write_until(stream, header.as_bytes(), deadline)?;
+    write_until(stream, data, deadline)
+}
+
+fn write_until(stream: &mut TcpStream, mut bytes: &[u8], deadline: Instant) -> std::io::Result<()> {
+    while !bytes.is_empty() {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "response deadline",
+            ));
+        }
+        stream.set_write_timeout(Some(remaining.min(Duration::from_secs(5))))?;
+        let count = stream.write(&bytes[..bytes.len().min(16384)])?;
+        if count == 0 {
+            return Err(std::io::ErrorKind::WriteZero.into());
+        }
+        bytes = &bytes[count..];
+    }
+    Ok(())
 }
 pub(crate) fn json_response(
     stream: &mut TcpStream,
@@ -375,20 +431,39 @@ pub fn serve(
     serve_inner(paths, env, port, idle_seconds, open, None)
 }
 
-/// Owns the desktop's loopback server. Dropping it finishes the current request
-/// and shuts down the server without terminating an in-progress transaction.
+/// Dropping the server cancels active network I/O, then joins the worker after
+/// any in-progress catalogue operation completes. Transactions are not aborted.
 pub struct DesktopServer {
     pub launch_url: String,
     stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    active: std::sync::Arc<std::sync::Mutex<Option<TcpStream>>>,
     thread: Option<std::thread::JoinHandle<Result<()>>>,
 }
 struct DesktopControl {
     ready: std::sync::mpsc::SyncSender<String>,
     stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    active: std::sync::Arc<std::sync::Mutex<Option<TcpStream>>>,
+}
+struct ActiveRequest<'a>(&'a std::sync::Mutex<Option<TcpStream>>);
+impl Drop for ActiveRequest<'_> {
+    fn drop(&mut self) {
+        self.0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take();
+    }
 }
 impl Drop for DesktopServer {
     fn drop(&mut self) {
         self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        if let Some(stream) = self
+            .active
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+        {
+            let _ = stream.shutdown(std::net::Shutdown::Both);
+        }
         if let Some(thread) = self.thread.take() {
             let _ = thread.join();
         }
@@ -397,15 +472,18 @@ impl Drop for DesktopServer {
 pub fn start_desktop(paths: Paths, env: PathEnvironment, port: u16) -> Result<DesktopServer> {
     let (ready, receiver) = std::sync::mpsc::sync_channel(1);
     let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let active = std::sync::Arc::new(std::sync::Mutex::new(None));
     let control = DesktopControl {
         ready,
         stop: stop.clone(),
+        active: active.clone(),
     };
     let thread = std::thread::spawn(move || serve_inner(paths, env, port, 0, false, Some(control)));
     match receiver.recv() {
         Ok(launch_url) => Ok(DesktopServer {
             launch_url,
             stop,
+            active,
             thread: Some(thread),
         }),
         Err(_) => {
@@ -486,11 +564,31 @@ fn serve_inner(
             continue;
         };
         let (mut stream, at) = pending.swap_remove(index);
-        if at.elapsed() > Duration::from_secs(2) {
+        if at.elapsed() > Duration::from_secs(2)
+            && matches!(stream.peek(&mut [0u8;1]),Err(e) if e.kind()==std::io::ErrorKind::WouldBlock)
+        {
             continue;
         }
         stream.set_nonblocking(false).map_err(io)?;
-        let req = match request(&mut stream, 16384, 65536) {
+        let _active = if let Some(control) = &desktop {
+            let mut active = control
+                .active
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if control.stop.load(std::sync::atomic::Ordering::Relaxed) {
+                break;
+            }
+            *active = Some(stream.try_clone().map_err(io)?);
+            Some(ActiveRequest(&control.active))
+        } else {
+            None
+        };
+        let req = match request_cancellable(
+            &mut stream,
+            16384,
+            65536,
+            desktop.as_ref().map(|c| c.stop.as_ref()),
+        ) {
             Ok(r) => r,
             Err(_) => {
                 let _ = json_response(
@@ -608,7 +706,16 @@ fn download(stream: &mut TcpStream, paths: &Paths, json: bool) -> Result<()> {
     use std::io::Seek;
     f.rewind().map_err(io)?;
     let ext = if json { "json" } else { "csv" };
-    write!(stream,"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Disposition: attachment; filename=\"omoi-history.{ext}\"\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nContent-Security-Policy: default-src 'none'\r\n\r\n",f.metadata().map_err(io)?.len()).map_err(io)?;
-    std::io::copy(&mut f, stream).map_err(io)?;
+    let header=format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Disposition: attachment; filename=\"omoi-history.{ext}\"\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nContent-Security-Policy: default-src 'none'\r\n\r\n",f.metadata().map_err(io)?.len());
+    let deadline = Instant::now() + Duration::from_secs(30);
+    write_until(stream, header.as_bytes(), deadline).map_err(io)?;
+    let mut buffer = [0u8; 16384];
+    loop {
+        let count = f.read(&mut buffer).map_err(io)?;
+        if count == 0 {
+            break;
+        }
+        write_until(stream, &buffer[..count], deadline).map_err(io)?;
+    }
     Ok(())
 }

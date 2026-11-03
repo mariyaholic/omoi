@@ -1,15 +1,6 @@
 //! Bounded, counter-only JSONL logs. No user-controlled strings enter a record.
 use crate::{collect::CollectReport, config::Config};
-use std::{
-    io::Write,
-    path::{Path, PathBuf},
-};
-struct Lock(PathBuf);
-impl Drop for Lock {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.0);
-    }
-}
+use std::{io::Write, path::Path};
 pub fn record(
     root: &Path,
     config: &Config,
@@ -19,11 +10,14 @@ pub fn record(
     std::fs::create_dir_all(root)?;
     let lock_path = root.join("logging.lock");
     let lock = std::fs::OpenOptions::new()
-        .create_new(true)
+        .create(true)
+        .truncate(false)
+        .read(true)
         .write(true)
         .open(&lock_path)?;
-    let _guard = Lock(lock_path);
-    drop(lock);
+    lock.try_lock().map_err(std::io::Error::from)?;
+    // Keep this inode and handle for the critical section. The OS releases the
+    // lock on process death; unlinking it would let a second inode bypass it.
     let record = serde_json::json!({"at":chrono::Utc::now().timestamp(),"operation":"collect","exit":exit,"profiles_ok":report.map(|r|r.profiles_ok),"profiles_failed":report.map(|r|r.profiles_failed),"rows_read":report.map(|r|r.rows_read),"rows_rejected":report.map(|r|r.rows_rejected),"views_inserted":report.map(|r|r.views_inserted),"warning_count":report.map(|r|r.warnings.len())});
     let mut bytes = serde_json::to_vec(&record)?;
     bytes.push(b'\n');

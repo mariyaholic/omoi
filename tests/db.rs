@@ -6,11 +6,40 @@ fn conn() -> Connection {
     c
 }
 #[test]
+fn v2_upgrade_preserves_identity_and_rolls_back_on_conflict() {
+    let mut c = conn();
+    c.execute_batch(include_str!("../src/db/0001.sql")).unwrap();
+    c.execute_batch(include_str!("../src/db/0002.sql")).unwrap();
+    c.execute_batch("PRAGMA user_version=2; INSERT INTO items(id,platform,external_id,title) VALUES(42,'youtube','abcdefghijk','Original'); CREATE TABLE deleted_items(conflict);").unwrap();
+    assert!(db::migrate(&mut c).is_err());
+    assert_eq!(db::info(&c).unwrap().user_version, 2);
+    assert!(c.prepare("SELECT * FROM item_sequence").is_err());
+    c.execute_batch("DROP TABLE deleted_items").unwrap();
+    db::migrate(&mut c).unwrap();
+    assert_eq!(
+        c.query_row("SELECT last_id FROM item_sequence", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        42
+    );
+    assert_eq!(
+        c.query_row("SELECT title FROM items WHERE id=42", [], |r| r
+            .get::<_, String>(0))
+            .unwrap(),
+        "Original"
+    );
+    c.execute(
+        "INSERT INTO items_fts(items_fts,rank) VALUES('integrity-check',1)",
+        [],
+    )
+    .unwrap();
+}
+#[test]
 fn migration_0001_idempotent() {
     let mut c = conn();
     db::migrate(&mut c).unwrap();
     db::migrate(&mut c).unwrap();
-    assert_eq!(db::info(&c).unwrap().user_version, 2);
+    assert_eq!(db::info(&c).unwrap().user_version, db::schema::VERSION);
     for table in [
         "items",
         "views",
@@ -42,7 +71,8 @@ fn migration_rollback() {
 #[test]
 fn reject_future_schema() {
     let mut c = conn();
-    c.execute_batch("PRAGMA user_version=3").unwrap();
+    c.execute_batch(&format!("PRAGMA user_version={}", db::schema::VERSION + 1))
+        .unwrap();
     assert!(matches!(
         db::migrate(&mut c),
         Err(omoi::Error::SchemaTooNew { .. })

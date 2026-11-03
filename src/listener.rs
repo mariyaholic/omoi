@@ -35,6 +35,8 @@ fn token(home: &Path) -> Result<String> {
     let file = dir.join("token");
     if !file.exists() {
         let value = crate::ui::random_token()?;
+        let staging = crate::readers::snapshot::TempDir::create(&dir)?;
+        let complete = staging.0.join("token");
         let mut options = std::fs::OpenOptions::new();
         options.write(true).create_new(true);
         #[cfg(not(windows))]
@@ -42,10 +44,18 @@ fn token(home: &Path) -> Result<String> {
             use std::os::unix::fs::OpenOptionsExt;
             options.mode(0o600);
         }
-        let mut f = options.open(&file).map_err(io)?;
+        let mut f = options.open(&complete).map_err(io)?;
         f.write_all(value.as_bytes())
             .and_then(|_| f.sync_all())
             .map_err(io)?;
+        drop(f);
+        // Publish only complete, synced bytes, without replacing an existing
+        // credential if another initializer won the race.
+        if let Err(error) = std::fs::hard_link(&complete, &file) {
+            if error.kind() != std::io::ErrorKind::AlreadyExists {
+                return Err(io(error));
+            }
+        }
     }
     let value = std::fs::read_to_string(file).map_err(io)?;
     if value.len() != 64 || !value.bytes().all(|b| b.is_ascii_hexdigit()) {
@@ -80,8 +90,13 @@ pub fn serve(paths: Paths) -> Result<()> {
     std::io::stdout().flush().map_err(io)?;
     for stream in listener.incoming() {
         let mut stream = stream.map_err(io)?;
-        let result = (|| -> Result<serde_json::Value> {
-            let r = crate::ui::request(&mut stream, 8192, 16384).map_err(io)?;
+        enum Rejected {
+            Invalid,
+            Forbidden,
+            Unavailable,
+        }
+        let result = (|| -> std::result::Result<serde_json::Value, Rejected> {
+            let r = crate::ui::request(&mut stream, 8192, 16384).map_err(|_| Rejected::Invalid)?;
             if r.method != "POST"
                 || r.target != "/event"
                 || r.headers.get("content-type").map(String::as_str) != Some("application/json")
@@ -99,17 +114,27 @@ pub fn serve(paths: Paths) -> Result<()> {
                     &token,
                 )
             {
-                return Err(Error::Config("Forbidden".into()));
+                return Err(Rejected::Forbidden);
             }
-            let body =
-                std::str::from_utf8(&r.body).map_err(|_| Error::Config("Invalid UTF-8".into()))?;
-            Ok(
-                serde_json::json!({"accepted":crate::sessionize::enqueue(&mut c,body,config.offset_seconds()?)?}),
-            )
+            let body = std::str::from_utf8(&r.body).map_err(|_| Rejected::Invalid)?;
+            let offset = config.offset_seconds().map_err(|_| Rejected::Unavailable)?;
+            let accepted =
+                crate::sessionize::enqueue(&mut c, body, offset).map_err(|error| match error {
+                    Error::Config(_) => Rejected::Invalid,
+                    _ => Rejected::Unavailable,
+                })?;
+            Ok(serde_json::json!({"accepted":accepted}))
         })();
         let (status, value) = match result {
             Ok(v) => (200, v),
-            Err(_) => (403, serde_json::json!({"error":"Playback event rejected"})),
+            Err(Rejected::Invalid) => (400, serde_json::json!({"error":"Invalid playback event"})),
+            Err(Rejected::Forbidden) => {
+                (403, serde_json::json!({"error":"Playback event forbidden"}))
+            }
+            Err(Rejected::Unavailable) => (
+                503,
+                serde_json::json!({"error":"Playback storage unavailable; retry"}),
+            ),
         };
         let _ = crate::ui::json_response(&mut stream, status, value);
     }

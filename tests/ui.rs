@@ -222,3 +222,81 @@ fn desktop_server_lifetime_auth_and_startup_collision() {
     drop(server);
     assert!(TcpStream::connect(&host).is_err());
 }
+
+#[test]
+fn complete_requests_survive_waiting_behind_a_slow_header() {
+    use omoi::{
+        paths::{PathEnvironment, Paths},
+        readers::snapshot::TempDir,
+    };
+    use std::{
+        collections::BTreeMap,
+        io::{Read, Write},
+        net::TcpStream,
+        time::Duration,
+    };
+    let temp = TempDir::create(&std::env::temp_dir()).unwrap();
+    std::fs::write(temp.0.join("config.toml"), "browsers=[]\n").unwrap();
+    let env = PathEnvironment {
+        windows: cfg!(windows),
+        vars: BTreeMap::from([("OMOI_HOME".into(), temp.0.clone().into_os_string())]),
+    };
+    let server = omoi::ui::start_desktop(Paths::resolve(&env).unwrap(), env, 0).unwrap();
+    let url = url::Url::parse(&server.launch_url).unwrap();
+    let host = format!("127.0.0.1:{}", url.port().unwrap());
+    let mut slow = TcpStream::connect(&host).unwrap();
+    let mut queued = TcpStream::connect(&host).unwrap();
+    slow.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+    queued
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
+    std::thread::sleep(Duration::from_millis(100));
+    slow.write_all(b"G").unwrap();
+    std::thread::sleep(Duration::from_millis(100));
+    write!(queued, "GET /icon.svg HTTP/1.1\r\nHost: {host}\r\n\r\n").unwrap();
+    std::thread::sleep(Duration::from_millis(1000));
+    slow.write_all(b"E").unwrap();
+    std::thread::sleep(Duration::from_millis(1200));
+    write!(slow, "T / HTTP/1.1\r\nHost: {host}\r\n\r\n").unwrap();
+    let mut a = String::new();
+    slow.read_to_string(&mut a).unwrap();
+    assert!(a.starts_with("HTTP/1.1 200"));
+    let mut b = String::new();
+    let _ = queued.read_to_string(&mut b);
+    assert!(
+        b.starts_with("HTTP/1.1 200"),
+        "queued request was lost: {b}"
+    );
+}
+
+#[test]
+fn desktop_close_interrupts_an_unfinished_network_read() {
+    use omoi::{
+        paths::{PathEnvironment, Paths},
+        readers::snapshot::TempDir,
+    };
+    use std::{collections::BTreeMap, io::Write, net::TcpStream, time::Duration};
+    let temp = TempDir::create(&std::env::temp_dir()).unwrap();
+    std::fs::write(temp.0.join("config.toml"), "browsers=[]\n").unwrap();
+    let env = PathEnvironment {
+        windows: cfg!(windows),
+        vars: BTreeMap::from([("OMOI_HOME".into(), temp.0.clone().into_os_string())]),
+    };
+    let server = omoi::ui::start_desktop(Paths::resolve(&env).unwrap(), env, 0).unwrap();
+    let url = url::Url::parse(&server.launch_url).unwrap();
+    let mut socket = TcpStream::connect(("127.0.0.1", url.port().unwrap())).unwrap();
+    socket.write_all(b"G").unwrap();
+    std::thread::sleep(Duration::from_millis(150));
+    let (send, receive) = std::sync::mpsc::channel();
+    let thread = std::thread::spawn(move || {
+        drop(server);
+        send.send(()).unwrap();
+    });
+    let fast = receive.recv_timeout(Duration::from_millis(700)).is_ok();
+    drop(socket);
+    thread.join().unwrap();
+    assert!(
+        fast,
+        "desktop shutdown waited for an unfinished client header"
+    );
+}

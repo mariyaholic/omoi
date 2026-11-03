@@ -1,0 +1,11 @@
+{
+  "result": "pass",
+  "task": "OmoiVerify-076ba743959441faa13a4351620109aa",
+  "checks": [
+    "isolated install",
+    "real helper launch",
+    "zero personal rows",
+    "last result zero",
+    "remove and absence"
+  ]
+}

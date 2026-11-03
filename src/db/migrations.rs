@@ -34,7 +34,11 @@ pub fn apply_initial(conn: &mut Connection, sql: &str) -> Result<()> {
             return Err(Error::Schema("nonempty unversioned database".into()));
         }
         tx.execute_batch(sql)?;
-        tx.pragma_update(None, "user_version", schema::VERSION)?;
+        tx.pragma_update(None, "user_version", 1)?;
+    }
+    if version < 2 {
+        tx.execute_batch(include_str!("0002.sql"))?;
+        tx.pragma_update(None, "user_version", 2)?;
     }
     tx.commit()?;
     Ok(())

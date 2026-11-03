@@ -170,6 +170,36 @@ def main():
                 page.get_by_role("button", name="Clear", exact=True).click()
                 expect(page.locator(".history-row")).to_have_count(50)
                 warm = []
+                page.locator('.history-row').first.click()
+                page.get_by_role('button', name='Edit metadata and tags', exact=True).click()
+                page.get_by_label('Title', exact=True).fill('Edited fixture')
+                page.get_by_label('Type', exact=True).fill('documentary')
+                page.get_by_label('Tags, one per line', exact=True).fill('Space\nScience')
+                page.get_by_role('button', name='Save changes', exact=True).click()
+                expect(page.locator('#message')).to_have_text('Item saved.')
+                page.locator('.history-row').first.click()
+                expect(page.locator('#detail-title')).to_have_text('Edited fixture')
+                expect(page.locator('#detail .tags')).to_contain_text('space')
+                for _ in range(12):
+                    page.keyboard.press('Tab')
+                    assert page.evaluate("document.querySelector('#detail').contains(document.activeElement)")
+                page.keyboard.press('Escape')
+                expect(page.locator('.history-row').first).to_be_focused()
+                page.locator('nav [data-page="sources"]').click()
+                page.get_by_role('button', name='Enable automatic collection', exact=True).click()
+                page.get_by_role('button', name='Cancel', exact=True).click()
+                expect(page.locator('#confirmation')).not_to_be_visible()
+                page.locator('nav [data-page="settings"]').click()
+                page.get_by_role('button', name='Check playback inbox', exact=True).click()
+                expect(page.locator('#playback-output')).to_contain_text('0 events pending')
+                page.get_by_role('button', name='Process playback', exact=True).click()
+                expect(page.locator('#playback-output')).to_contain_text('0 events processed')
+                page.evaluate('window.showSaveFilePicker=undefined')
+                with page.expect_download() as downloaded:
+                    page.get_by_role('button', name='Export JSON', exact=True).click()
+                exported = json.loads(Path(downloaded.value.path()).read_text(encoding='utf-8'))
+                assert len(exported) == 10000
+                assert any(v['title'] == 'Edited fixture' for v in exported)
                 for _ in range(10):
                     page.locator('nav [data-page="settings"]').click()
                     expect(page.get_by_role("heading", name="Appearance", exact=True)).to_be_visible()
@@ -235,7 +265,7 @@ def main():
                       "api_ms_median": statistics.median(latency), "api_ms_max": max(latency),
                       "warm_history_click_to_rows_ms_median": statistics.median(warm), "warm_history_click_to_rows_ms_max": max(warm),
                       "resources": resources, "javascript_errors": errors, "external_requests": external,
-                      "checks": ["empty catalogue", "selected-profile collection excludes unchecked profile", "10k item pagination", "FTS/literal search", "HTML escaping", "delete cancel/confirm/FTS cascade", "all screens and details in five themes", "appearance persistence", "token removed from URL", "unauthenticated and foreign Host/Origin rejection", "duplicate/oversized/chunked request rejection", "port collision", "idle shutdown"]}
+                      "checks": ["metadata and tag editing", "dialog keyboard containment and focus restoration", "scheduler confirmation cancellation", "playback inbox processing", "JSON download", "empty catalogue", "selected-profile collection excludes unchecked profile", "10k item pagination", "FTS/literal search", "HTML escaping", "delete cancel/confirm/FTS cascade", "all screens and details in five themes", "appearance persistence", "token removed from URL", "unauthenticated and foreign Host/Origin rejection", "duplicate/oversized/chunked request rejection", "port collision", "idle shutdown"]}
         finally:
             proc.terminate()
             proc.wait(timeout=10)

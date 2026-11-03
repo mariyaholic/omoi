@@ -54,7 +54,7 @@ pub fn ingest(tx: &Transaction<'_>, r: &Candidate) -> Result<IngestOutcome> {
         || (kind.as_deref() == Some("video") && matches!(r.kind.as_deref(), Some("short" | "live")))
     {
         tx.execute(
-            "UPDATE items SET kind=?1 WHERE id=?2",
+            "UPDATE items SET kind=?1 WHERE id=?2 AND NOT EXISTS(SELECT 1 FROM metadata_fields WHERE item_id=?2 AND field='kind' AND source='manual')",
             rusqlite::params![r.kind, id],
         )?;
     }

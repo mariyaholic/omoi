@@ -1,5 +1,7 @@
 # Connected catalogue UI
 
+Current additions: Details includes **Edit metadata and tags**; Settings includes **Export JSON**, **Export CSV**, **Check playback inbox** and **Process playback**; Sources includes confirmed scheduler enable/disable and status. [Playback setup](../userscripts/README.md) and [follow-through notes](../docs/completion-20261103.md) supersede older CLI-only and unavailable-input statements below.
+
 Run `omoi ui --open`. Without `--open`, copy the printed launch URL into a browser.
 The executable embeds the interface and all five themes; no Node, Python or asset installation is needed.
 
@@ -15,13 +17,13 @@ The server binds only `127.0.0.1:43822`. Use `--port 0` for an available port if
 6. Suggestions uses the existing local recommendation queries. Missing sessions/tags/durations yield empty shelves. Select an item in Details to find shared tags.
 7. Settings provides Uika, Confluence, Panel, Mariyaholic-98 and Argonaut Oak. Appearance and spacing persist in browser local storage, scoped to the catalogue and HTTP origin; changing the port creates a different browser storage origin.
 
-Export and Windows task installation/status/removal remain CLI operations, with commands shown in the UI. Metadata enrichment, tag editing and playback capture are not implemented by this change. No fake save controls or simulated collection are present in the connected UI. The separate `prototype/` remains a fictional-data design study.
+Export buttons and Windows scheduling controls now call the local backend. Details supports metadata and tag edits. Optional capture fills missing metadata from observed video elements and records playback separately; see [setup](../userscripts/README.md). The separate `prototype/` remains a fictional-data design study.
 
 ## Session and request boundaries
 
 Every launch generates 32 bytes from the OS random source. The launch URL carries the hex token in its fragment; JavaScript immediately removes it from the visible URL and keeps it only in memory. Every API call requires the token header, including reads. Reloading the tab loses the token: reopen the printed launch URL. Do not share that URL.
 
-Exact loopback Host is required. Foreign or null Origins are rejected; mutations require the exact same origin and JSON content type. No CORS permissions are sent. Assets are an explicit embedded allowlist. CSP forbids external resources and framing; responses are no-store with no-referrer. Titles and metadata are escaped in the UI and queries use bound parameters. The UI token is separate from any future listener token.
+Exact loopback Host is required. Foreign or null Origins are rejected; mutations require the exact same origin and JSON content type. No CORS permissions are sent. Assets are an explicit embedded allowlist. CSP forbids external resources and framing; responses are no-store with no-referrer. Titles and metadata are escaped and queries use bound parameters. The UI token is separate from the persistent append-only listener token.
 
 The standard-library server bounds headers to 16 KiB and request bodies to 64 KiB. It checks a five-second read deadline between reads, with two-second socket timeouts; a read already in progress may extend beyond that deadline. Writes have a five-second timeout. Up to 16 speculative sockets are parked until readable; idle sockets expire after two seconds. Requests execute sequentially; a collection can delay other API requests. No resident collector, database polling or remote service is added.
 

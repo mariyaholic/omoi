@@ -3,7 +3,7 @@
 Local, low-overhead watch history for the PC: reads browser history (Chrome, Edge, Brave,
 Firefox) into one SQLite file, with optional hourly collection and explainable local suggestions.
 
-Status: the CLI and local browser UI use the same SQLite catalogue. History, search, filters, details, confirmed deletion, selected-profile collection and local suggestions are implemented. All five visual themes are available. Playback capture and metadata enrichment remain future work. See `docs/m0-acceptance.md` for the existing acceptance gaps and [UI instructions](ui/README.md) for the connected interface.
+Status: the CLI and UI share one catalogue. History, search, filters, deletion, selected-profile collection, local suggestions, metadata/tag editing, exports and scheduler controls are implemented. Optional userscript capture feeds measured playback into the catalogue. All five themes remain. See [current changes and acceptance](docs/completion-20261103.md), [UI instructions](ui/README.md) and [playback setup](userscripts/README.md).
 
 ## Open the app
 
@@ -15,7 +15,7 @@ In the portable Windows ZIP, extract all files and double-click **Run Omoi.cmd**
 
 The browser connects only to `127.0.0.1:43822`; the server exits after ten idle minutes. If the port is occupied, close the other Omoi console or use `omoi ui --port 0 --open`. The launch URL contains a private session token that is removed from the address bar. If you reload the tab, reopen the URL printed in the console. Use the app's Refresh button to reload catalogue data without losing the session.
 
-Settings includes **Uika**, **Confluence**, **Panel**, **Mariyaholic-98**, and **Argonaut Oak**. Appearance persists in the browser. Export and Windows scheduling remain terminal commands; they are shown in the interface.
+Settings includes **Uika**, **Confluence**, **Panel**, **Mariyaholic-98**, and **Argonaut Oak**. Appearance persists in the browser. Export is in Settings; Windows scheduling controls are in Sources. CLI commands remain available.
 
 ## Use the command-line baseline
 

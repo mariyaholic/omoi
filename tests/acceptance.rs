@@ -79,12 +79,12 @@ fn dedupe_richness_approx_max_and_rollback() {
     assert_eq!(n, 0);
 }
 #[test]
-fn sessionize_m0_stub() {
-    assert!(!omoi::sessionize::available());
-    assert!(matches!(
-        omoi::sessionize::run(),
-        Err(omoi::Error::NotImplemented(_))
-    ));
+fn sessionize_empty_inbox() {
+    assert!(omoi::sessionize::available());
+    let mut c = rusqlite::Connection::open_in_memory().unwrap();
+    omoi::db::migrate(&mut c).unwrap();
+    let tx = c.transaction().unwrap();
+    assert_eq!(omoi::sessionize::run(&tx).unwrap(), 0);
 }
 #[cfg(not(windows))]
 #[test]

@@ -46,7 +46,7 @@ pub fn task_xml(spec: &TaskSpec<'_>) -> Result<String> {
     let directory = xml(spec.directory)?;
     let args = xml(&format!("--home {} collect", quote(spec.home)))?;
     Ok(format!(
-        r#"<?xml version="1.0" encoding="UTF-8"?>
+        r#"<?xml version="1.0"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
 <RegistrationInfo><Description>Omoi local browser history collection</Description></RegistrationInfo>
 <Triggers><TimeTrigger><Repetition><Interval>PT1H</Interval><StopAtDurationEnd>false</StopAtDurationEnd></Repetition><StartBoundary>{start}</StartBoundary><Enabled>true</Enabled></TimeTrigger><LogonTrigger><Enabled>true</Enabled><UserId>{sid}</UserId><Delay>PT30S</Delay></LogonTrigger></Triggers>
@@ -56,7 +56,7 @@ pub fn task_xml(spec: &TaskSpec<'_>) -> Result<String> {
     ))
 }
 #[cfg(windows)]
-fn powershell() -> Result<std::process::Command> {
+pub(crate) fn powershell() -> Result<std::process::Command> {
     use std::os::windows::process::CommandExt;
     let root = std::env::var_os("SystemRoot")
         .ok_or_else(|| Error::Config("SystemRoot unavailable".into()))?;
@@ -73,7 +73,15 @@ fn powershell() -> Result<std::process::Command> {
     Ok(cmd)
 }
 #[cfg(windows)]
-pub fn execute(mode: &str, home: &std::path::Path) -> Result<()> {
+pub fn result_named(mode: &str, home: &std::path::Path, folder: &str) -> Result<String> {
+    if folder.is_empty()
+        || folder.len() > 64
+        || !folder
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+    {
+        return Err(Error::Config("Invalid task folder".into()));
+    }
     use chrono::Timelike;
     let run = crate::readers::snapshot::TempDir::create(&std::env::temp_dir())?;
     let script = run.0.join("schedule.ps1");
@@ -138,6 +146,7 @@ pub fn execute(mode: &str, home: &std::path::Path) -> Result<()> {
         .arg(script)
         .arg(mode)
         .arg(task)
+        .arg(folder)
         .output()
         .map_err(|source| Error::Io {
             context: "scheduler process",
@@ -145,14 +154,21 @@ pub fn execute(mode: &str, home: &std::path::Path) -> Result<()> {
         })?;
     if !result.status.success() {
         return Err(Error::Config(format!(
-            "scheduler {mode} failed (exit {:?})",
-            result.status.code()
+            "scheduler {mode} failed (exit {:?}): {}",
+            result.status.code(),
+            String::from_utf8_lossy(&result.stderr).trim()
         )));
     }
-    print!("{}", String::from_utf8_lossy(&result.stdout));
-    Ok(())
+    Ok(String::from_utf8_lossy(&result.stdout).into_owned())
 }
 #[cfg(not(windows))]
-pub fn execute(_: &str, _: &std::path::Path) -> Result<()> {
+pub fn result_named(_: &str, _: &std::path::Path, _: &str) -> Result<String> {
     Err(Error::Unsupported("Windows Task Scheduler"))
+}
+pub fn result(mode: &str, home: &std::path::Path) -> Result<String> {
+    result_named(mode, home, "Omoi")
+}
+pub fn execute(mode: &str, home: &std::path::Path) -> Result<()> {
+    print!("{}", result(mode, home)?);
+    Ok(())
 }

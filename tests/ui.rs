@@ -145,3 +145,80 @@ fn ui_auth_rejects_foreign_hosts_origins_and_tokens() {
         &token
     ));
 }
+
+#[test]
+fn desktop_server_lifetime_auth_and_startup_collision() {
+    use omoi::{
+        paths::{PathEnvironment, Paths},
+        readers::snapshot::TempDir,
+    };
+    use std::{
+        collections::BTreeMap,
+        io::{Read, Write},
+        net::TcpStream,
+    };
+    let temp = TempDir::create(&std::env::temp_dir().join("omoi-desktop-tests")).unwrap();
+    let env_for = |home: &std::path::Path| PathEnvironment {
+        windows: cfg!(windows),
+        vars: BTreeMap::from([("OMOI_HOME".into(), home.as_os_str().to_owned())]),
+    };
+    std::fs::write(temp.0.join("config.toml"), "browsers=[]\n").unwrap();
+    let env = env_for(&temp.0);
+    let server = omoi::ui::start_desktop(Paths::resolve(&env).unwrap(), env, 0).unwrap();
+    let url = url::Url::parse(&server.launch_url).unwrap();
+    let host = format!("127.0.0.1:{}", url.port().unwrap());
+    let token = url.fragment().unwrap().strip_prefix("token=").unwrap();
+    for (path, mime, expected) in [
+        (
+            "/icon.svg",
+            "image/svg+xml",
+            include_bytes!("../assets/icon.svg").as_slice(),
+        ),
+        (
+            "/favicon.ico",
+            "image/x-icon",
+            include_bytes!("../assets/icon.ico").as_slice(),
+        ),
+    ] {
+        let mut stream = TcpStream::connect(&host).unwrap();
+        stream
+            .set_read_timeout(Some(std::time::Duration::from_secs(5)))
+            .unwrap();
+        write!(
+            stream,
+            "GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
+        )
+        .unwrap();
+        let mut response = Vec::new();
+        stream.read_to_end(&mut response).unwrap();
+        let split = response.windows(4).position(|s| s == b"\r\n\r\n").unwrap();
+        let headers = String::from_utf8_lossy(&response[..split]);
+        assert!(headers.starts_with("HTTP/1.1 200"));
+        assert!(headers.contains(&format!("Content-Type: {mime}")));
+        assert_eq!(&response[split + 4..], expected);
+    }
+    for (supplied, expected) in [("", "403"), (token, "200")] {
+        let mut stream = TcpStream::connect(&host).unwrap();
+        stream
+            .set_read_timeout(Some(std::time::Duration::from_secs(5)))
+            .unwrap();
+        write!(stream, "GET /api/info HTTP/1.1\r\nHost: {host}\r\nX-Omoi-Token: {supplied}\r\nConnection: close\r\n\r\n").unwrap();
+        let mut response = String::new();
+        stream.read_to_string(&mut response).unwrap();
+        assert!(
+            response.starts_with(&format!("HTTP/1.1 {expected}")),
+            "{response}"
+        );
+        if supplied == token {
+            assert!(response.contains("\"idle_seconds\":0"));
+        }
+    }
+    let other = temp.0.join("must-not-be-created");
+    let env = env_for(&other);
+    assert!(
+        omoi::ui::start_desktop(Paths::resolve(&env).unwrap(), env, url.port().unwrap()).is_err()
+    );
+    assert!(!other.exists());
+    drop(server);
+    assert!(TcpStream::connect(&host).is_err());
+}

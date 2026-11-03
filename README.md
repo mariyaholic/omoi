@@ -5,17 +5,19 @@ Firefox) into one SQLite file, with optional hourly collection and explainable l
 
 Status: the CLI and UI share one catalogue. History, search, filters, deletion, selected-profile collection, local suggestions, metadata/tag editing, exports and scheduler controls are implemented. Optional userscript capture feeds measured playback into the catalogue. All five themes remain. See [headless acceptance](docs/headless-acceptance-20261103.md), [UI instructions](ui/README.md) and [playback setup](userscripts/README.md).
 
+On Windows, launch `omoi-desktop.exe` for a standalone Omoi window without browser tabs, an address bar or a console. It uses the same catalogue and five themes. Close the window to stop its UI server. The optional browser interface remains available through the CLI.
+
 ## Open the app
 
 ```text
-omoi ui --open
+omoi-desktop.exe
 ```
 
-In the portable Windows ZIP, extract all files and double-click **Run Omoi.cmd**. Keep its console open while using the app. Starting the UI opens the existing catalogue, or creates an empty one. To import, choose **Sources**, select profiles and confirm **Collect selected**. No collection or scheduled task is started automatically.
+In the portable Windows ZIP, extract all files and double-click **omoi-desktop.exe** or **Run Omoi.cmd**. Starting the app opens the existing catalogue, or creates an empty one. To import, choose **Sources**, select profiles and confirm **Collect selected**. No collection or scheduled task is started automatically.
 
-The browser connects only to `127.0.0.1:43822`; the server exits after ten idle minutes. If the port is occupied, close the other Omoi console or use `omoi ui --port 0 --open`. The launch URL contains a private session token that is removed from the address bar. If you reload the tab, reopen the URL printed in the console. Use the app's Refresh button to reload catalogue data without losing the session.
+The desktop uses loopback port 43823 and runs until its window closes. `WebView2Loader.dll` must remain beside the executable. The optional `omoi ui --open` command opens the browser interface on port 43822 with a ten-minute idle timeout; `--port 0` selects a free port for that mode. Use the app's Refresh button to reload catalogue data.
 
-Settings includes **Uika**, **Confluence**, **Panel**, **Mariyaholic-98**, and **Argonaut Oak**. Appearance persists in the browser. Export is in Settings; Windows scheduling controls are in Sources. CLI commands remain available.
+Settings includes **Uika**, **Confluence**, **Panel**, **Mariyaholic-98**, and **Argonaut Oak**. Appearance persists in the app's webview profile. Export is in Settings; Windows scheduling controls are in Sources. CLI commands remain available.
 
 ## Use the command-line baseline
 

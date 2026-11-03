@@ -372,6 +372,58 @@ pub fn serve(
     idle_seconds: u64,
     open: bool,
 ) -> Result<()> {
+    serve_inner(paths, env, port, idle_seconds, open, None)
+}
+
+/// Owns the desktop's loopback server. Dropping it finishes the current request
+/// and shuts down the server without terminating an in-progress transaction.
+pub struct DesktopServer {
+    pub launch_url: String,
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    thread: Option<std::thread::JoinHandle<Result<()>>>,
+}
+struct DesktopControl {
+    ready: std::sync::mpsc::SyncSender<String>,
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+impl Drop for DesktopServer {
+    fn drop(&mut self) {
+        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+pub fn start_desktop(paths: Paths, env: PathEnvironment, port: u16) -> Result<DesktopServer> {
+    let (ready, receiver) = std::sync::mpsc::sync_channel(1);
+    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let control = DesktopControl {
+        ready,
+        stop: stop.clone(),
+    };
+    let thread = std::thread::spawn(move || serve_inner(paths, env, port, 0, false, Some(control)));
+    match receiver.recv() {
+        Ok(launch_url) => Ok(DesktopServer {
+            launch_url,
+            stop,
+            thread: Some(thread),
+        }),
+        Err(_) => {
+            thread
+                .join()
+                .map_err(|_| Error::Config("Desktop server stopped during startup".into()))??;
+            Err(Error::Config("Desktop server did not start".into()))
+        }
+    }
+}
+fn serve_inner(
+    paths: Paths,
+    env: PathEnvironment,
+    port: u16,
+    idle_seconds: u64,
+    open: bool,
+    desktop: Option<DesktopControl>,
+) -> Result<()> {
     // Bind first: a collision must not mutate the catalogue.
     let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, port)).map_err(io)?;
     listener.set_nonblocking(true).map_err(io)?;
@@ -383,8 +435,15 @@ pub fn serve(
     crate::db::migrate(&mut conn)?;
     drop(conn);
     let launch_url = format!("http://{host}/#token={token}");
-    println!("{launch_url}");
-    std::io::stdout().flush().map_err(io)?;
+    if let Some(control) = &desktop {
+        control
+            .ready
+            .send(launch_url.clone())
+            .map_err(|_| Error::Config("Desktop window closed during startup".into()))?;
+    } else {
+        println!("{launch_url}");
+        std::io::stdout().flush().map_err(io)?;
+    }
     if open {
         #[cfg(windows)]
         let opened = {
@@ -406,7 +465,10 @@ pub fn serve(
     // Browsers open speculative idle connections. Park a bounded number until
     // readable rather than blocking real API traffic behind each idle socket.
     let mut pending: Vec<(TcpStream, Instant)> = Vec::new();
-    while active.elapsed() < Duration::from_secs(idle_seconds) {
+    while match &desktop {
+        Some(control) => !control.stop.load(std::sync::atomic::Ordering::Relaxed),
+        None => active.elapsed() < Duration::from_secs(idle_seconds),
+    } {
         for _ in 0..16 {
             match listener.accept() {
                 Ok((stream, _)) if pending.len() < 16 => {
@@ -488,7 +550,17 @@ pub fn serve(
             }
             active = Instant::now();
         } else if req.method == "GET" {
+            if req.target == "/favicon.ico" {
+                let _ = response(
+                    &mut stream,
+                    200,
+                    "image/x-icon",
+                    include_bytes!("../assets/icon.ico"),
+                );
+                continue;
+            }
             let asset = match req.target.as_str() {
+                "/icon.svg" => Some(("image/svg+xml", include_str!("../assets/icon.svg"))),
                 "/forms.css" => Some(("text/css; charset=utf-8", include_str!("../ui/forms.css"))),
                 "/" => Some(("text/html; charset=utf-8", include_str!("../ui/index.html"))),
                 "/app.js" => Some((

@@ -31,12 +31,18 @@ jobs:
         run: cargo +${{ matrix.toolchain }} fmt --check
       - name: Lint
         run: cargo +${{ matrix.toolchain }} clippy --locked --all-targets -- -D warnings
+      - name: Windows desktop loader
+        if: runner.os == 'Windows'
+        run: python scripts/verify_desktop.py --bin-dir target/debug --stage-only
       - name: Test
         run: cargo +${{ matrix.toolchain }} test --locked --all-targets
       - name: Release build
         run: cargo +${{ matrix.toolchain }} build --locked --release --bins --example synthetic
       - name: Synthetic release journey
         run: python scripts/smoke.py --bin-dir target/release
+      - name: Desktop window
+        if: runner.os == 'Windows'
+        run: python scripts/verify_desktop.py --bin-dir target/release
       - name: Playback transport and restart
         run: python scripts/verify_playback.py --binary target/release/omoi${{ runner.os == 'Windows' && '.exe' || '' }}
       - name: Userscript capture semantics

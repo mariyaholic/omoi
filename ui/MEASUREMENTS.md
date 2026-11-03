@@ -1,5 +1,7 @@
 # Connected UI evidence — 2026-11-03
 
+Historical measurements of source `ac16495`. See [later headless acceptance](../docs/headless-acceptance-20261103.md) for the retained-week test, full-inbox fix, hour run, real manager transport, browser process measurements, axe audits and actual browser zoom.
+
 Local Windows GNU optimized build; installed Edge, headless. All data was generated in isolated temporary catalogues. Browser discovery roots were replaced with fixture roots. No personal history was read. A uniquely named temporary scheduler task was installed, launched and removed in a separate synthetic check; normal Omoi scheduling was not enabled.
 
 Binary `omoi.exe`: 2,425,344 bytes. SHA-256: `49e193e906e8598191f4c95188248870c95bf32cd46143348fded72d2618d918`.

@@ -1,0 +1,272 @@
+{
+  "result": "pass",
+  "fixture_items_after_delete": 10000,
+  "axe_audits": [
+    {
+      "theme": "Uika",
+      "screen": "history",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Uika",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Uika",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Uika",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr"
+      ]
+    },
+    {
+      "theme": "Uika",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Confluence",
+      "screen": "history",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Confluence",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Confluence",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Confluence",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr"
+      ]
+    },
+    {
+      "theme": "Confluence",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Panel",
+      "screen": "history",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Panel",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Panel",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Panel",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr"
+      ]
+    },
+    {
+      "theme": "Panel",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "history",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "history",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr"
+      ]
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    }
+  ],
+  "browser_resources": {
+    "processes": [
+      {
+        "type": "browser",
+        "working_set_bytes": 195862528,
+        "private_bytes": 73142272
+      },
+      {
+        "type": "renderer",
+        "working_set_bytes": 38871040,
+        "private_bytes": 17485824
+      },
+      {
+        "type": "renderer",
+        "working_set_bytes": 83267584,
+        "private_bytes": 35815424
+      },
+      {
+        "type": "renderer",
+        "working_set_bytes": 305598464,
+        "private_bytes": 244027392
+      },
+      {
+        "type": "GPU",
+        "working_set_bytes": 195538944,
+        "private_bytes": 156499968
+      },
+      {
+        "type": "network.mojom.NetworkService",
+        "working_set_bytes": 48533504,
+        "private_bytes": 14409728
+      },
+      {
+        "type": "storage.mojom.StorageService",
+        "working_set_bytes": 26255360,
+        "private_bytes": 8626176
+      },
+      {
+        "type": "entity_extraction_service.mojom.Extractor",
+        "working_set_bytes": 24760320,
+        "private_bytes": 8376320
+      },
+      {
+        "type": "edge_collections.mojom.CollectionsDataManager",
+        "working_set_bytes": 24154112,
+        "private_bytes": 8261632
+      }
+    ],
+    "reported_processes": 9,
+    "measured_processes": 9,
+    "sum_private_bytes": 566644736,
+    "scope": "isolated headless Edge processes reported by CDP after journey, History page open; not normal browser incremental cost; working sets share pages"
+  },
+  "widths": [
+    1440,
+    375,
+    320
+  ],
+  "themes": [
+    "Uika",
+    "Confluence",
+    "Panel",
+    "Mariyaholic-98",
+    "Argonaut Oak"
+  ],
+  "api_ms_median": 63.464549952186644,
+  "api_ms_max": 81.53039996977895,
+  "warm_history_click_to_rows_ms_median": 118.84789995383471,
+  "warm_history_click_to_rows_ms_max": 137.9271000623703,
+  "resources": {
+    "server_working_set_bytes": 9871360,
+    "server_peak_working_set_bytes": 11649024,
+    "server_idle_cpu_ms_over_3s": 15.625,
+    "browser_memory": "see browser_resources"
+  },
+  "javascript_errors": [],
+  "external_requests": [],
+  "checks": [
+    "metadata and tag editing",
+    "dialog keyboard containment and focus restoration",
+    "scheduler confirmation cancellation",
+    "playback inbox processing",
+    "JSON download",
+    "empty catalogue",
+    "selected-profile collection excludes unchecked profile",
+    "10k item pagination",
+    "FTS/literal search",
+    "HTML escaping",
+    "delete cancel/confirm/FTS cascade",
+    "all screens and details in five themes",
+    "appearance persistence",
+    "token removed from URL",
+    "unauthenticated and foreign Host/Origin rejection",
+    "duplicate/oversized/chunked request rejection",
+    "port collision",
+    "idle shutdown"
+  ]
+}

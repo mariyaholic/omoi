@@ -3,7 +3,7 @@
 Local, low-overhead watch history for the PC: reads browser history (Chrome, Edge, Brave,
 Firefox) into one SQLite file, with optional hourly collection and explainable local suggestions.
 
-Status: the CLI and UI share one catalogue. History, search, filters, deletion, selected-profile collection, local suggestions, metadata/tag editing, exports and scheduler controls are implemented. Optional userscript capture feeds measured playback into the catalogue. All five themes remain. See [current changes and acceptance](docs/completion-20261103.md), [UI instructions](ui/README.md) and [playback setup](userscripts/README.md).
+Status: the CLI and UI share one catalogue. History, search, filters, deletion, selected-profile collection, local suggestions, metadata/tag editing, exports and scheduler controls are implemented. Optional userscript capture feeds measured playback into the catalogue. All five themes remain. See [headless acceptance](docs/headless-acceptance-20261103.md), [UI instructions](ui/README.md) and [playback setup](userscripts/README.md).
 
 ## Open the app
 
@@ -56,19 +56,19 @@ omoi schedule install
 omoi schedule remove
 ```
 
-`install` creates/replaces only `\Omoi\Collect`. It collects hourly and 30 seconds after logon, only while the user is logged on. It does not wake the PC, skips/stops on battery, ignores overlapping triggers, and has a ten-minute execution limit. The collector exits between runs. The GUI-subsystem helper avoids a flashing console window. Registration uses the built-in Windows PowerShell Task Scheduler COM adapter; PowerShell exits after installation/inspection/removal and is not part of hourly collection. No task is installed automatically by the build or tests.
+`install` creates/replaces only `\Omoi\Collect`. It collects hourly and 30 seconds after logon, only while the user is logged on. It does not wake the PC, skips/stops on battery, ignores overlapping triggers, and has a ten-minute execution limit. The collector exits between runs. The GUI-subsystem helper avoids a flashing console window. Registration uses the built-in Windows PowerShell Task Scheduler COM adapter; PowerShell exits after installation/inspection/removal and is not part of hourly collection. The build and Rust unit suite do not install tasks.
 
-Status currently returns the task XML or an explicit not-installed message, not last-run health. Removal preserves the catalogue. Linux provides an unsupported-platform stub for these commands.
+Status returns the registered task XML and last-run result, or an explicit not-installed message. Removal preserves the catalogue. Linux provides an unsupported-platform stub for these commands. `scripts/verify_schedule.py` explicitly creates, launches and removes a separate synthetic task for acceptance.
 
 ## Local suggestions
 
-`omoi recommend --seconds 1200` returns explained JSON shelves. Add `--item ID` for similar items based on stored tags. Rediscover uses history older than 30 days; Fits your time needs known video duration; Continue watching needs actual recorded session position. Browser visits alone supply neither measured playback nor full video duration. Tags, durations and sessions have storage/query support, but this baseline does not yet provide their capture/editing flows. Empty shelves are expected. No model, paid API, remote recommendation service or continuous process is required.
+`omoi recommend --seconds 1200` returns explained JSON shelves. Add `--item ID` for similar items based on stored tags. Rediscover uses history older than 30 days; Fits your time needs known video duration; Continue watching needs actual recorded session position. Browser visits alone supply neither measured playback nor full video duration. Edit tags/duration in item details or enable optional userscript playback capture. Shelves stay empty when the required evidence is absent. No model, paid API or remote recommendation service is required.
 
 ## Current limits
 
 A clickable [visual prototype](prototype/index.html) demonstrates History, Suggestions, Sources and Settings with fictional data. Open its `index.html` directly in a browser; see [prototype instructions](prototype/README.md). It is separate from the working CLI and does not collect history or install tasks.
 
-The connected UI is embedded in `omoi.exe`; opening `prototype/index.html` still opens the separate fictional-data study. Playback capture and metadata/tag editing are not provided by the UI. Snapshotting live SQLite files is best-effort. Fixture-based journeys do not establish acceptance on personal browser profiles. Real retained-week import, installed scheduler smoke, independent review and remaining strict contract cases stay open. Resources are measured on synthetic data; see `docs/m0-acceptance.md` and `ui/README.md`.
+The connected UI is embedded in `omoi.exe`; opening `prototype/index.html` still opens the separate fictional-data study. The UI edits metadata/tags and processes the playback inbox; the optional listener must be started separately. Snapshotting live SQLite files is best-effort. The owner-authorized retained-week snapshot import and isolated installed-task test have passed. Authenticated platform playback, real logon/battery transitions, manual accessibility and independent review remain open, along with the strict M0 cases recorded in [headless acceptance](docs/headless-acceptance-20261103.md). Resources are measured on synthetic data with explicit process and workload boundaries.
 
 - Design: `docs/watch-history-architecture.md` (§0 holds Maria's decisions)
 - Review: `docs/omoi-design-review.md`

@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--binary',required=True,type=Path)
     parser.add_argument('--extension-dir',required=True,type=Path)
     parser.add_argument('--out',required=True,type=Path)
+    parser.add_argument('--public-youtube',action='store_true',help='Use one public YouTube video anonymously instead of the offline synthetic player')
     args=parser.parse_args()
     extension=args.extension_dir.resolve()
     manifest=json.loads((extension/'manifest.json').read_text(encoding='utf-8'))
@@ -58,7 +59,7 @@ def main():
             token=(home/'listener/token').read_text()
             with sync_playwright() as playwright:
                 context=playwright.chromium.launch_persistent_context(str(root/'browser'),channel='chromium',headless=True,
-                    proxy={'server':'http://127.0.0.1:9','bypass':'127.0.0.1,localhost'},
+                    proxy={'server':'http://127.0.0.1:9','bypass':'127.0.0.1,localhost'+(',*.youtube.com,*.googlevideo.com,*.ytimg.com,*.ggpht.com' if args.public_youtube else '')},
                     args=[f'--disable-extensions-except={extension}',f'--load-extension={extension}'])
                 try:
                     expect.set_options(timeout=30000)
@@ -85,8 +86,15 @@ def main():
                     install.get_by_role('button',name='Install',exact=True).click()
                     video=context.new_page()
                     fixture='<title>Omoi synthetic manager acceptance</title><video muted controls></video><canvas width="64" height="64"></canvas>'
-                    video.route('https://www.youtube.com/**',lambda route:route.fulfill(content_type='text/html',body=fixture))
-                    video.goto('https://www.youtube.com/watch?v=abcdefghijk')
+                    if args.public_youtube:
+                        video.goto('https://www.youtube.com/watch?v=jNQXAC9IVRw',wait_until='domcontentloaded')
+                        reject=video.get_by_role('button',name='Reject all',exact=True)
+                        if reject.count():
+                            reject.first.click()
+                        expect(video.locator('video').first).to_be_attached()
+                    else:
+                        video.route('https://www.youtube.com/**',lambda route:route.fulfill(content_type='text/html',body=fixture))
+                        video.goto('https://www.youtube.com/watch?v=abcdefghijk')
                     video.wait_for_timeout(1500)
                     tab_id=worker.evaluate("async()=>{const tabs=await chrome.tabs.query({});return tabs.find(t=>t.url.includes('youtube.com/watch')).id}")
                     popup=context.new_page()
@@ -111,7 +119,10 @@ def main():
                     video.wait_for_timeout(500)
                     assert len(prompts)==2,prompts
                     # Real HTML video playback from a generated canvas stream; no mocked GM APIs.
-                    video.evaluate("async()=>{const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),v=document.querySelector('video');window.fixtureTimer=setInterval(()=>{ctx.fillStyle='#456789';ctx.fillRect(0,0,64,64)},100);v.srcObject=canvas.captureStream(10);await v.play()}")
+                    if args.public_youtube:
+                        video.evaluate("async()=>{const v=document.querySelector('video');v.muted=true;await v.play()}")
+                    else:
+                        video.evaluate("async()=>{const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),v=document.querySelector('video');window.fixtureTimer=setInterval(()=>{ctx.fillStyle='#456789';ctx.fillRect(0,0,64,64)},100);v.srcObject=canvas.captureStream(10);await v.play()}")
                     video.wait_for_timeout(12000)
                     video.evaluate("document.querySelector('video').pause()")
                     video.wait_for_timeout(1000)
@@ -129,7 +140,7 @@ def main():
                     report={'result':'pass','manager_version':manifest['version'],'browser':context.browser.version,
                         'accepted_events':len(events),'session_played_seconds':played,'pairing_prompts':len(prompts),
                         'checks':['unmodified shipped script installed through manager UI','pairing through real menu and protected GM storage','real HTML video events','real GM_xmlhttpRequest accepted by strict listener','token absent from page HTML','transactional session processing'],
-                        'scope':'disposable headless Chromium; unpacked official manager package; synthetic document at matched YouTube URL; external network blocked by dead proxy; no normal browser profile or authenticated platform used'}
+                        'scope':('one public YouTube video in a disposable anonymous headless browser; only YouTube/media hosts and loopback permitted; no normal browser profile or credentials used' if args.public_youtube else 'disposable headless Chromium; unpacked official manager package; synthetic document at matched YouTube URL; external network blocked by dead proxy; no normal browser profile or authenticated platform used')}
                 finally:
                     context.close()
         finally:

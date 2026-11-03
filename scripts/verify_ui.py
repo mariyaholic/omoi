@@ -6,6 +6,7 @@ import argparse
 import base64
 import ctypes
 from contextlib import closing
+import hashlib
 import http.client
 import json
 import os
@@ -368,6 +369,7 @@ def main():
                 resources = {"server_working_set_bytes": memory.working, "server_peak_working_set_bytes": memory.peak_working,
                              "server_idle_cpu_ms_over_3s": cpu() - before, "browser_memory": "see browser_resources"}
             report = {"result": "failed" if any(a['violations'] for a in audits) else "pass", "fixture_items_after_delete": 10000,
+                      'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),
                       'axe_audits':audits,'browser_resources':browser_resources,'browser_zoom':zoom_report,
                       "widths": [1440, 375, 320], "themes": ["Uika", "Confluence", "Panel", "Mariyaholic-98", "Argonaut Oak"],
                       "api_ms_median": statistics.median(latency), "api_ms_max": max(latency),

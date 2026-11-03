@@ -60,3 +60,32 @@ fn export_broken_pipe() {
         );
     }
 }
+
+#[test]
+fn json_export_batches_writes() {
+    #[derive(Default)]
+    struct Sink {
+        writes: usize,
+        bytes: usize,
+    }
+    impl Write for Sink {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            self.writes += 1;
+            self.bytes += bytes.len();
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let c = catalogue();
+    c.execute_batch("WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<1000) INSERT INTO views(item_id,started_at,source) SELECT 1,x+100,'chrome' FROM n").unwrap();
+    let mut sink = Sink::default();
+    export::export(&c, true, &mut sink).unwrap();
+    assert!(sink.bytes > 100000);
+    assert!(
+        sink.writes < 1000,
+        "JSON export made {} underlying writes for 1002 rows",
+        sink.writes
+    );
+}

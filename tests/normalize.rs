@@ -54,3 +54,35 @@ fn local_path_case() {
         Some("file:/C:/Video/%2520.mp4".into())
     );
 }
+
+#[test]
+fn twitch_local_midnight() {
+    let offset = chrono::FixedOffset::east_opt(28800).unwrap();
+    for (at, expected) in [
+        ("2026-10-24T15:59:59Z", "live:maria:2026-10-24"),
+        ("2026-10-24T16:00:00Z", "live:maria:2026-10-25"),
+    ] {
+        let time = chrono::DateTime::parse_from_rfc3339(at)
+            .unwrap()
+            .timestamp();
+        let value =
+            omoi::normalize::normalize("https://www.twitch.tv/maria", time, offset).unwrap();
+        assert_eq!(value.key.external_id, expected);
+    }
+}
+
+#[test]
+fn normalizer_identity_params() {
+    let offset = chrono::FixedOffset::east_opt(28800).unwrap();
+    let key = |url: &str| omoi::normalize::normalize(url, 0, offset).map(|v| v.key.external_id);
+    let base = "https://www.bilibili.com/video/BV1xx411c7mD";
+    assert_eq!(key(base), key(&format!("{base}?p=1")));
+    assert_ne!(key(base), key(&format!("{base}?p=2")));
+    for url in [
+        "https://youtube.com/watch?v=abcdefghijk&v=12345678901",
+        "https://youtube.com/watch?v=abcdefghijk&%76=abcdefghijk",
+        "https://www.bilibili.com/video/BV1xx411c7mD?p=1&p=2",
+    ] {
+        assert!(key(url).is_none(), "{url}");
+    }
+}

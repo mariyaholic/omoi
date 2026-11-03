@@ -35,6 +35,8 @@ pub fn export(conn: &Connection, json: bool, writer: &mut dyn Write) -> Result<(
         })
     })?;
     if json {
+        // serde_json emits small fragments; bound memory while amortizing disk writes.
+        let mut writer = std::io::BufWriter::with_capacity(64 * 1024, writer);
         writer.write_all(b"[").map_err(err)?;
         let mut first = true;
         for row in rows {
@@ -42,7 +44,7 @@ pub fn export(conn: &Connection, json: bool, writer: &mut dyn Write) -> Result<(
                 writer.write_all(b",").map_err(err)?;
             }
             first = false;
-            serde_json::to_writer(&mut *writer, &row?).map_err(|e| {
+            serde_json::to_writer(&mut writer, &row?).map_err(|e| {
                 if e.io_error_kind() == Some(std::io::ErrorKind::BrokenPipe) {
                     err(std::io::Error::from(std::io::ErrorKind::BrokenPipe))
                 } else {
@@ -51,6 +53,7 @@ pub fn export(conn: &Connection, json: bool, writer: &mut dyn Write) -> Result<(
             })?;
         }
         writer.write_all(b"]\n").map_err(err)?;
+        writer.flush().map_err(err)?;
     } else {
         let mut csv = csv::WriterBuilder::new()
             .terminator(csv::Terminator::CRLF)

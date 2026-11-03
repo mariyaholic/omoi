@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+import xml.etree.ElementTree as ET
 
 
 def main():
@@ -34,6 +35,19 @@ def main():
             xml = run('install')
             assert 'omoiw.exe' in xml and 'PT1H' in xml and '<Hidden>true</Hidden>' in xml
             assert str(root) in xml
+            registered=run('status')
+            tree=ET.fromstring(registered[registered.index('<Task'):registered.index('</Task>')+len('</Task>')])
+            ns={'t':'http://schemas.microsoft.com/windows/2004/02/mit/task'}
+            settings={name:tree.findtext('t:Settings/t:'+name,namespaces=ns) for name in ('DisallowStartIfOnBatteries','StopIfGoingOnBatteries','WakeToRun','MultipleInstancesPolicy','Hidden')}
+            # The service omits default-valued XML elements. Inspect the COM value.
+            inspect=root/'inspect-task.ps1'
+            inspect.write_text("param([string]$Folder)\n$ErrorActionPreference='Stop'\n$s=New-Object -ComObject Schedule.Service\n$s.Connect()\n$s.GetFolder('\\'+$Folder).GetTask('Collect').Definition.Settings.WakeToRun\n",encoding='utf-8')
+            wake=subprocess.run([str(Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'),'-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(inspect),folder],capture_output=True,text=True,timeout=15,creationflags=subprocess.CREATE_NO_WINDOW)
+            assert wake.returncode==0,wake.stderr
+            settings['WakeToRun']=wake.stdout.strip().lower()
+            assert settings=={'DisallowStartIfOnBatteries':'true','StopIfGoingOnBatteries':'true','WakeToRun':'false','MultipleInstancesPolicy':'IgnoreNew','Hidden':'true'},settings
+            assert tree.find('t:Triggers/t:LogonTrigger',ns) is not None
+            assert tree.findtext('t:Triggers/t:TimeTrigger/t:Repetition/t:Interval',namespaces=ns)=='PT1H'
             run('run')
             deadline = time.monotonic() + 30
             while time.monotonic() < deadline:
@@ -49,7 +63,7 @@ def main():
         finally:
             run('remove')
         assert 'not installed' in run('status')
-    receipt={'result': 'pass', 'task': folder, 'checks': ['isolated install', 'real helper launch', 'zero personal rows', 'last result zero', 'remove and absence']}
+    receipt={'result': 'pass', 'task': folder, 'registered_settings':settings,'checks': ['isolated install', 'registered hourly/logon triggers and battery/overlap/wake settings', 'real helper launch', 'zero personal rows', 'last result zero', 'remove and absence'],'not_tested':['actual logon transition','actual AC-to-battery transition','visual observation of hidden launch']}
     if args.out:
         args.out.write_text(json.dumps(receipt,indent=2),encoding='utf-8')
     print(json.dumps(receipt))

@@ -1,0 +1,153 @@
+/* Optional Omoi appearance studies, informed by the user's local Open Design
+   systems. See REFERENCE_REVIEW.md for paths, source/derived distinctions.
+   These scoped overrides do not modify the Uika canon or the source packages. */
+body[data-skin="paper"] {
+  --bg-deepest:#e9e2d5;
+  --bg-ground:#f3efe4;
+  --bg-panel:#e9e2d5;
+  --bg-panel-2:#ded4c4;
+  --bg-input:#f3efe4;
+  --platinum:#231f19;
+  --text:#231f19;
+  --text-bright:#231f19;
+  --muted:#685e51;
+  --slate:#685e51;
+  --line:#c5b9a6;
+  --line-subtle:#ded4c4;
+  --line-strong:#a69782;
+  --gold:#94301f;
+  --gold-bright:#94301f;
+  --gold-dim:#b75c47;
+  --gold-glow:rgba(148,48,31,.08);
+  --lavender:#685e51;
+  --reading-font:Georgia,"Times New Roman",serif;
+  --radius-sm:0px;
+  --radius-md:0px;
+  --radius-lg:0px;
+}
+body[data-skin="paper"] .searchbox,
+body[data-skin="paper"] .automation,
+body[data-skin="paper"] .platform-icon,
+body[data-skin="paper"] .select-control,
+body[data-skin="paper"] .detail-evidence,
+body[data-skin="paper"] .confirmation{border-radius:0}
+body[data-skin="paper"] .primary{color:var(--bg-ground)}
+body[data-skin="paper"] .page-heading h1{font-size:42px;letter-spacing:-.035em}
+body[data-skin="paper"] .day-heading{border-bottom-color:var(--muted)}
+body[data-skin="paper"] .suggestion-card h3{font-style:italic}
+body[data-skin="panel"] {
+  --bg-deepest:#121418;
+  --bg-ground:#121418;
+  --bg-panel:#1a1d23;
+  --bg-panel-2:#23272f;
+  --bg-input:#121418;
+  --platinum:#ebeef2;
+  --text:#ebeef2;
+  --text-bright:#ebeef2;
+  --muted:#8c94a0;
+  --slate:#8c94a0;
+  --line:#2a2f38;
+  --line-subtle:#242830;
+  --line-strong:#424955;
+  --gold:#d4b372;
+  --gold-bright:#e1c68e;
+  --gold-dim:#927d56;
+  --gold-glow:rgba(212,179,114,.10);
+  --lavender:#b6bfcd;
+  --reading-font:"Segoe UI",Tahoma,sans-serif;
+  --shadow:none;
+}
+body[data-skin="panel"] .page-heading h1{font-size:32px;font-weight:600;letter-spacing:-.6px}
+body[data-skin="panel"] .brand>span{font-weight:600;font-size:34px}
+body[data-skin="panel"] .section-title h2,
+body[data-skin="panel"] .settings-section h2,
+body[data-skin="panel"] .automation h2{font:600 20px/1.4 var(--ui-font)}
+body[data-skin="panel"] .suggestion-card h3{font:500 22px/1.4 var(--ui-font)}
+body[data-skin="panel"] .detail-sheet h2{font:600 27px/1.3 var(--ui-font)}
+body[data-skin="panel"] .history-row{padding-top:15px;padding-bottom:15px}
+.row-time{font-family:Consolas,"Courier New",monospace;font-size:11px;font-variant-numeric:tabular-nums}
+@media(max-width:740px){body[data-skin="paper"] .page-heading h1{font-size:36px}}
+
+/* A source-labelled gallery keeps five choices legible on narrow screens. */
+.theme-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:28px}
+.theme-choice{display:flex;flex-direction:column;text-align:left;padding:16px;gap:8px;border:1px solid var(--line-strong);border-radius:var(--radius-md);background:var(--surface);min-width:0}
+.theme-choice[aria-pressed="true"]{border-color:var(--gold-bright);box-shadow:inset 0 0 0 1px var(--gold-bright)}
+.theme-choice strong{font-size:14px;line-height:1.5;font-weight:600}
+.theme-subtitle{font-size:12px;color:var(--gold-bright)}
+.theme-swatch{display:flex;height:24px;width:100%;margin-bottom:6px;border:1px solid var(--line-strong)}
+.theme-swatch i{flex:1;background:var(--swatch-ground)}
+.theme-swatch i:nth-child(2){background:var(--swatch-panel)}
+.theme-swatch i:nth-child(3){background:var(--swatch-ink)}
+.theme-swatch i:nth-child(4){background:var(--swatch-accent)}
+.swatch-night{--swatch-ground:#0b0913;--swatch-panel:#14101c;--swatch-ink:#e9e4da;--swatch-accent:#bb9955}
+.swatch-paper{--swatch-ground:#f3efe4;--swatch-panel:#e9e2d5;--swatch-ink:#231f19;--swatch-accent:#94301f}
+.swatch-panel{--swatch-ground:#121418;--swatch-panel:#1a1d23;--swatch-ink:#ebeef2;--swatch-accent:#d4b372}
+.swatch-pc98{--swatch-ground:#120c24;--swatch-panel:#22204a;--swatch-ink:#cfd6f4;--swatch-accent:#f08868}
+.swatch-oak{--swatch-ground:#07100d;--swatch-panel:#0d1a15;--swatch-ink:#e7eadf;--swatch-accent:#c6a15b}
+
+/* Mariyaholic-98: sourced 16-colour palette and square-window vocabulary.
+   Font names are local-only; Consolas is the portable fallback. */
+body[data-skin="pc98"]{
+  --bg-deepest:#000000;--bg-ground:#120c24;--bg-panel:#22204a;--bg-panel-2:#33407a;--bg-input:#120c24;
+  --platinum:#cfd6f4;--text:#cfd6f4;--text-bright:#ffffff;--muted:#8fa0dd;--slate:#8fa0dd;
+  --line:#33407a;--line-subtle:#33407a;--line-strong:#8fa0dd;
+  --gold:#f08868;--gold-bright:#f4cf8a;--gold-dim:#f08868;--gold-glow:#3a1230;--lavender:#8fa0dd;
+  --good:#a6dcc4;--danger:#f08868;--shadow:6px 6px 0 #000000;
+  --ui-font:"Departure Mono","JetBrains Mono",Consolas,"Courier New",monospace;
+  --reading-font:"Departure Mono","JetBrains Mono",Consolas,"Courier New",monospace;
+  --radius-sm:0px;--radius-md:0px;--radius-lg:0px;
+}
+body[data-skin="pc98"] .sidebar{background-color:#120c24;background-image:repeating-conic-gradient(#22204a 0% 25%,#120c24 0% 50%);background-size:4px 4px;border-right:2px solid #8fa0dd}
+body[data-skin="pc98"] .sidebar nav{background:var(--bg-ground);border:2px solid var(--line-strong);padding:4px;box-shadow:var(--shadow)}
+body[data-skin="pc98"] :is(button,.searchbox,.select-control,.platform-icon,.automation,.detail-evidence,.confirmation,.tags span,.state-pill,.browser-letter,.toast){border-radius:0}
+body[data-skin="pc98"] :focus-visible{outline:2px dashed #f4cf8a;outline-offset:4px}
+body[data-skin="pc98"] .page-heading h1{font:400 44px/1.2 var(--reading-font);letter-spacing:0}
+body[data-skin="pc98"] .brand>span{font:400 33px/1.2 var(--reading-font);letter-spacing:0}
+body[data-skin="pc98"] .brand>svg{flex-shrink:0}
+body[data-skin="pc98"] .brand>span{min-width:0}
+body[data-skin="pc98"] .brand-caption{white-space:normal;line-height:1.6}
+body[data-skin="pc98"] :is(.settings-section h2,.section-title h2,.automation h2,.suggestion-card h3){font:400 22px/1.4 var(--reading-font)}
+body[data-skin="pc98"] .detail-sheet h2{font:400 33px/1.3 var(--reading-font)}
+body[data-skin="pc98"] .day-heading{background:var(--bg-panel);border:1px solid var(--line-strong);border-left:4px solid var(--gold);padding:9px 12px}
+body[data-skin="pc98"] :is(.searchbox,.automation,.confirmation,.rediscover){border:2px solid var(--line-strong);box-shadow:var(--shadow)}
+body[data-skin="pc98"] .primary{background:#f4cf8a;color:#120c24;border:2px solid #000;box-shadow:3px 3px 0 #000}
+body[data-skin="pc98"] .platform-icon{color:#f08868;border-color:#8fa0dd;background:#22204a}
+body[data-skin="pc98"] dialog::backdrop{backdrop-filter:none;background:#0009}
+body[data-skin="pc98"] .row-time{font-family:var(--ui-font);color:var(--muted)}
+
+/* Argonaut Oak: sourced pine/brass roles. Brighter semantic foregrounds and
+   readable 13-15px body sizes adapt the dense terminal system to Omoi. */
+body[data-skin="oak"]{
+  --bg-deepest:#050a08;--bg-ground:#07100d;--bg-panel:#0d1a15;--bg-panel-2:#13241e;--bg-input:#050a08;
+  --platinum:#e7eadf;--text:#e7eadf;--text-bright:#e7eadf;--muted:#afc0b5;--slate:#74897d;
+  --line:#1f332a;--line-subtle:#1f332a;--line-strong:#496353;
+  --gold:#c6a15b;--gold-bright:#d4b372;--gold-dim:#8f7239;--gold-glow:rgba(198,161,91,.18);--lavender:#6ecbd0;
+  --good:#77c58a;--danger:#dd8173;--shadow:0 1px 0 #ffffff0a inset,0 0 0 1px #1f332a,0 2px 6px #02060473;
+  --ui-font:Inter,"Segoe UI",Tahoma,sans-serif;--reading-font:Outfit,Inter,"Segoe UI",sans-serif;
+  --radius-sm:4px;--radius-md:6px;--radius-lg:12px;
+}
+body[data-skin="oak"] .page-heading h1{font:600 34px/1.2 var(--reading-font);letter-spacing:-.02em}
+body[data-skin="oak"] .brand>span{font:600 34px/1.2 var(--reading-font)}
+body[data-skin="oak"] :is(.settings-section h2,.section-title h2,.automation h2){font:600 22px/1.4 var(--reading-font)}
+body[data-skin="oak"] .suggestion-card h3{font:500 24px/1.4 var(--reading-font)}
+body[data-skin="oak"] .detail-sheet h2{font:500 27px/1.3 var(--reading-font)}
+body[data-skin="oak"] .day-heading{padding:10px 12px;background:var(--bg-panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line-strong)}
+body[data-skin="oak"] .history-row{padding-top:14px;padding-bottom:14px}
+body[data-skin="oak"] .row-time{font-family:"TrixieCyr Plain","Love Letter Typewriter","Gallant Raster Term","JetBrains Mono",Consolas,monospace;color:var(--lavender);font-size:12px}
+body[data-skin="oak"] .platform-icon{border-radius:4px;color:var(--gold-bright)}
+body[data-skin="oak"] .automation{border-top:2px solid var(--gold);box-shadow:var(--shadow)}
+body[data-density="compact"] .history-row{padding-top:12px;padding-bottom:12px}
+@media(max-width:1050px){.theme-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:740px){
+  body[data-skin="pc98"] .sidebar{border-right:0}
+  body[data-skin="pc98"] .sidebar nav{padding:0;gap:0;box-shadow:4px 4px 0 #000}
+  body[data-skin="pc98"] .sidebar nav button{font-size:11px;padding:0 3px}
+  body[data-skin="pc98"] .sidebar nav .nav-icon{display:none}
+  body[data-skin="pc98"] .brand-caption{font-size:10px;max-width:150px}
+  body[data-skin="pc98"] .page-heading h1{font-size:33px}
+  body[data-skin="pc98"] .detail-sheet h2{font-size:22px}
+  body[data-skin="pc98"] .row-sub{flex-wrap:wrap}
+  body[data-skin="pc98"] .study-bar{padding-left:12px;padding-right:12px;font-size:9px}
+  body[data-skin="pc98"] .study-bar select{max-width:100px}
+}
+@media(max-width:440px){.theme-gallery{grid-template-columns:1fr}.theme-choice{padding:16px}.theme-swatch{height:20px}}

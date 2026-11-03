@@ -1,6 +1,6 @@
 # Omoi: feature catalogue
 
-*Design only. Nothing shipped. Date: 2026-10-28; source-doc conflicts resolved the same day (see Open items). Built only from the Omoi docs. Code status is from HANDOFF.md (2026-10-25): U1 partial, U2 to U14 not started.*
+*Historical design inventory, dated 2026-10-28. The state and test columns below describe that planning snapshot, not current implementation. For current CLI and connected UI behavior, evidence and remaining gates, see [PROGRESS.md](PROGRESS.md), [M0 acceptance](docs/m0-acceptance.md) and [UI instructions](ui/README.md).*
 
 Omoi is a PC-only, local watch-history app. The hourly collector exits after each run. The listener is optional.
 

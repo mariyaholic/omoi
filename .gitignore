@@ -1,1 +1,6 @@
 target/
+__pycache__/
+.local-acceptance/
+ui/acceptance/
+ui/*verification.json
+docs/measurements/*.json

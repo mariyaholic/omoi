@@ -1,0 +1,47 @@
+{
+  "result": "pass",
+  "browser": "156.0.4314.42",
+  "screenshots": [
+    "detail-desktop.png",
+    "detail-mobile.png",
+    "empty-desktop.png",
+    "history-desktop.png",
+    "history-mobile.png",
+    "history-panel-mobile.png",
+    "history-panel.png",
+    "history-paper-mobile.png",
+    "history-paper.png",
+    "settings-mobile.png",
+    "sources-desktop.png",
+    "sources-mobile.png",
+    "suggestions-desktop.png",
+    "suggestions-mobile.png"
+  ],
+  "widths": [
+    1440,
+    375,
+    320
+  ],
+  "javascript_errors": [],
+  "external_requests": [],
+  "checks": [
+    "search and literal hostile text",
+    "platform/date filters",
+    "save/remove/cancel/undo",
+    "Escape and focus return",
+    "search shortcut",
+    "suggestion budget and topic selection",
+    "profile selection",
+    "simulated automation",
+    "partial/empty states",
+    "Night/Paper/Panel themes and computed colors",
+    "density and reset on reload",
+    "all screens at 320 and 375 pixels",
+    "Paper/Panel all screens at 320 pixels",
+    "long title detail",
+    "reduced motion",
+    "sample export and reset",
+    "mobile refresh",
+    "direct file loading"
+  ]
+}

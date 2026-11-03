@@ -54,6 +54,8 @@ Status currently returns the task XML or an explicit not-installed message, not 
 
 ## Current limits
 
+A clickable [visual prototype](prototype/index.html) demonstrates History, Suggestions, Sources and Settings with fictional data. Open its `index.html` directly in a browser; see [prototype instructions](prototype/README.md). It is separate from the working CLI and does not collect history or install tasks.
+
 There is no graphical UI or playback-time listener yet. Snapshotting live SQLite files is best-effort. Fixture-based CLI journeys and hosted Windows/Linux verification support trying the baseline; they do not establish acceptance on personal browser profiles. Real retained-week import, installed scheduler smoke, independent review and remaining strict contract cases stay open. Resources are measured on synthetic data; see `docs/m0-acceptance.md`. UI direction is in `docs/ui-recommendations.md`.
 
 - Design: `docs/watch-history-architecture.md` (§0 holds Maria's decisions)

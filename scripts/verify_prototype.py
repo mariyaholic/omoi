@@ -74,7 +74,7 @@ def main():
         page.locator('nav [data-page="history"]').click()
         expect(page.get_by_text("Firefox is busy. Your Edge history is available.")).to_be_visible()
         page.get_by_label("Preview state").select_option("empty")
-        expect(page.get_by_role("heading", name="Your history starts here.")).to_be_visible()
+        expect(page.get_by_role("heading", name="No history yet.")).to_be_visible()
         page.screenshot(path=str(args.out / "empty-desktop.png"))
         page.get_by_role("button", name="Load sample library").click()
         page.locator('nav [data-page="settings"]').click()

@@ -66,17 +66,14 @@ body[data-skin="panel"] .suggestion-card h3{font:500 22px/1.4 var(--ui-font)}
 body[data-skin="panel"] .detail-sheet h2{font:600 27px/1.3 var(--ui-font)}
 body[data-skin="panel"] .history-row{padding-top:15px;padding-bottom:15px}
 .row-time{font-family:Consolas,"Courier New",monospace;font-size:11px;font-variant-numeric:tabular-nums}
-.appearance-note{font-size:12px;color:var(--soft);padding:15px 0;border-top:1px solid var(--line);line-height:1.8}
 @media(max-width:740px){body[data-skin="paper"] .page-heading h1{font-size:36px}}
 
 /* A source-labelled gallery keeps five choices legible on narrow screens. */
-.appearance-intro{color:var(--soft);font-size:14px;margin-bottom:22px}
 .theme-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:28px}
 .theme-choice{display:flex;flex-direction:column;text-align:left;padding:16px;gap:8px;border:1px solid var(--line-strong);border-radius:var(--radius-md);background:var(--surface);min-width:0}
 .theme-choice[aria-pressed="true"]{border-color:var(--gold-bright);box-shadow:inset 0 0 0 1px var(--gold-bright)}
 .theme-choice strong{font-size:14px;line-height:1.5;font-weight:600}
 .theme-subtitle{font-size:12px;color:var(--gold-bright)}
-.theme-description{font-size:12px;line-height:1.65;color:var(--soft)}
 .theme-swatch{display:flex;height:24px;width:100%;margin-bottom:6px;border:1px solid var(--line-strong)}
 .theme-swatch i{flex:1;background:var(--swatch-ground)}
 .theme-swatch i:nth-child(2){background:var(--swatch-panel)}

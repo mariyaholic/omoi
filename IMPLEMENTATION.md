@@ -2,6 +2,8 @@
 
 Prepared 2026-11-03 for Astra and local implementers. This is a work plan, not a claim that Omoi runs today.
 
+Current implementation evidence and remaining work are in [PROGRESS.md](PROGRESS.md); its status supersedes the historical starting point below.
+
 ## Authority and horizon
 
 Maria authorizes Astra to work autonomously across the Omoi roadmap, beginning with M0 U1 and continuing through U2–U14 and, where feasible, M1–M5. Do not stop at a unit boundary merely to ask whether to continue. Plan, implement, test, debug, review, document and prepare reviewable branches or draft PRs within the existing design and the boundaries below. Use the existing code and contract as starting points, not as a reason to stop when a routine implementation detail is unspecified. Make reasonable reversible choices, record them, and keep going.

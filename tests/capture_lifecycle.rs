@@ -63,7 +63,7 @@ fn collision_preserves_owner_and_credential() {
 fn startup_drains_pending_without_a_process_click() {
     let (_t, p) = home();
     let mut c = db::open(&p.db, &Config::default(), true).unwrap();
-    let event = serde_json::json!({"event_id":"pending:0","producer_id":"pending","seq":0,"url":"https://www.youtube.com/watch?v=abcdefghijk","at_ms":1700000000000i64,"state":"playing","position_ms":0,"cumulative_played_ms":0,"title":"Startup fixture","channel":null,"duration_s":60});
+    let event = serde_json::json!({"event_id":"pending:0","producer_id":"pending","seq":0,"url":"https://www.youtube.com/watch?v=abcdefghijk","at_ms":chrono::Utc::now().timestamp_millis(),"state":"playing","position_ms":0,"cumulative_played_ms":0,"title":"Startup fixture","channel":null,"duration_s":60});
     omoi::sessionize::enqueue(&mut c, &event.to_string(), 0).unwrap();
     let _managed = Managed::start(p).unwrap();
     let deadline = Instant::now() + Duration::from_secs(5);

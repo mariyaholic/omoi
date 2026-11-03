@@ -38,7 +38,7 @@ pub fn enqueue_checked(
     if body.len() > 16384 {
         return Err(invalid());
     }
-    let e: Event = serde_json::from_str(body).map_err(|_| invalid())?;
+    let mut e: Event = serde_json::from_str(body).map_err(|_| invalid())?;
     let ident = |s: &str| {
         !s.is_empty()
             && s.len() <= 128
@@ -85,6 +85,19 @@ pub fn enqueue_checked(
             return Err(Error::Config(
                 "Capture consent or catalogue binding changed; reconnect".into(),
             ));
+        }
+    }
+    if setup.choice == crate::setup::Choice::Enabled {
+        if setup.accept_after_ms.is_some_and(|at| e.at_ms < at) {
+            return Err(Error::Config(
+                "Playback predates current capture consent".into(),
+            ));
+        }
+        // Legacy clients cannot receive a Stop command while the owned port is
+        // closed. Reject their old queue above and give continuing counters a
+        // server-side epoch so stopped time can never become later credit.
+        if binding.is_none() {
+            e.producer_id = format!("epoch{}:{}", setup.capture_epoch, e.producer_id);
         }
     }
     if tx.execute(

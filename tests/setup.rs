@@ -101,3 +101,27 @@ fn progress_and_profile_changes_preserve_capture_epoch() {
     }
     .compatible());
 }
+#[test]
+fn legacy_queue_and_counters_cannot_credit_time_while_stopped() {
+    let mut c = db();
+    let mut s = change(&mut c, 0, "enabled");
+    s.accept_after_ms = Some(1000);
+    s.save(&c).unwrap();
+    let event = |seq, at, counter| {
+        serde_json::json!({"event_id":format!("legacy:{seq}"),"producer_id":"legacy","seq":seq,"url":"https://www.youtube.com/watch?v=abcdefghijk","at_ms":at,"state":"playing","position_ms":counter,"cumulative_played_ms":counter,"title":"Legacy fixture","channel":null,"duration_s":60}).to_string()
+    };
+    for (seq, at, counter) in [(0, 1000, 0), (1, 2000, 1000)] {
+        omoi::sessionize::enqueue(&mut c, &event(seq, at, counter), 0).unwrap();
+    }
+    omoi::sessionize::process_batch(&mut c).unwrap();
+    change(&mut c, 1, "stopped");
+    let mut s = change(&mut c, 2, "enabled");
+    s.accept_after_ms = Some(5000);
+    s.save(&c).unwrap();
+    assert!(omoi::sessionize::enqueue(&mut c, &event(2, 3000, 2000), 0).is_err());
+    for (seq, at, counter) in [(3, 6000, 5000), (4, 7000, 6000)] {
+        omoi::sessionize::enqueue(&mut c, &event(seq, at, counter), 0).unwrap();
+    }
+    omoi::sessionize::process_batch(&mut c).unwrap();
+    assert_eq!(omoi::sessionize::total(&c, 1).unwrap(), 2);
+}

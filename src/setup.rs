@@ -48,6 +48,7 @@ pub struct Setup {
     pub version: u32,
     pub generation: u64,
     pub capture_epoch: u64,
+    pub accept_after_ms: Option<i64>,
     pub binding: String,
     pub choice: Choice,
     pub step: String,
@@ -65,6 +66,7 @@ impl Default for Setup {
             version: 1,
             generation: 0,
             capture_epoch: 0,
+            accept_after_ms: None,
             binding: String::new(),
             choice: Choice::NotChosen,
             step: "choose".into(),
@@ -174,6 +176,9 @@ pub fn change(c: &mut Connection, change: Change) -> Result<Setup> {
         s.binding = crate::ui::random_token()?;
     }
     if consent_before != (s.choice, s.background) {
+        if s.choice == Choice::Enabled {
+            s.accept_after_ms = Some(chrono::Utc::now().timestamp_millis());
+        }
         s.capture_epoch = s
             .capture_epoch
             .checked_add(1)

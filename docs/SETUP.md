@@ -39,7 +39,7 @@ close/repair the other listener yourself; Omoi never kills it or rotates its tok
 Stop revokes capture across the managed listener and native host. Received durable
 inbox data remains and drains when enabled again. Companion events from an older
 consent generation are discarded with a counter; they cannot cross Stop/re-enable
-or a different catalogue. The app can finish the current bounded transaction on close.
+or a different catalogue. Older queued userscript samples are also rejected after Stop/resume; continuing legacy counters start from a new baseline, so stopped time is not added later. The app can finish the current bounded transaction on close.
 
 “Allow companion background capture” separately permits the native host to capture
 while Edge is running and Omoi is closed. It does not install a logon task, launch

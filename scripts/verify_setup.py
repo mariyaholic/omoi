@@ -35,7 +35,7 @@ def main():
             with urllib.request.urlopen(req,timeout=10) as r:return json.load(r)
         def change(**fields):return api('setup',{'generation':api('setup')['settings']['generation'],**fields})
         def event(n,producer='fixture'):
-            return dict(event_id=f'{producer}:{n}',producer_id=producer,seq=n,url='https://www.youtube.com/watch?v=abcdefghijk',at_ms=1700000000000+n*1000,state='playing',position_ms=n*1000,cumulative_played_ms=n*1000,title='Synthetic setup fixture',channel=None,duration_s=600)
+            return dict(event_id=f'{producer}:{n}',producer_id=producer,seq=n,url='https://www.youtube.com/watch?v=abcdefghijk',at_ms=int(time.time()*1000)+n*1000,state='playing',position_ms=n*1000,cumulative_played_ms=n*1000,title='Synthetic setup fixture',channel=None,duration_s=600)
         def wait_for(check):
             deadline=time.monotonic()+5
             while time.monotonic()<deadline:

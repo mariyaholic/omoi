@@ -12,7 +12,7 @@ only when capture choice/background consent changes; saving a setup step or sour
 scope never discards queued playback. Native events carry both the random,
 non-secret catalogue binding and capture epoch (the wire field is named `generation`). Admission checks them in the same
 transaction that inserts receipt+inbox, so a committed Stop rejects subsequent old
-requests. Binding is not a network credential; it prevents accidental queue mixing.
+requests. Resuming consent also sets an event-time admission cutoff. Older queued HTTP samples are rejected, and HTTP producer counters receive a server-side consent epoch so an unmodified 0.1.1 client cannot retroactively credit stopped time. Already durable inbox entries are retained. Binding is not a network credential; it prevents accidental queue mixing.
 
 HTTP remains loopback, exact Host, absent Origin, exact persistent token, POST JSON
 only. `/event` remains compatible with 0.1.1. `/hello` takes

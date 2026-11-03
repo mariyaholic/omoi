@@ -32,7 +32,7 @@ Implementation validation:
 
 - `cargo fmt --check`
 - `cargo clippy --locked --all-targets -- -D warnings`
-- `cargo test --locked --all-targets`: 94 passing Rust tests
+- `cargo test --locked --all-targets`: 95 passing Rust tests
 - `node --test tests/userscript.test.cjs tests/extension.test.cjs`: 16 passing tests
 - `python tests/desktop_state.py`: two passing cleanup tests
 - `OMOI_TEST_BROWSER=/usr/bin/chromium python tests/ui_state.py`: 13 passing UI
@@ -139,3 +139,10 @@ Two subsequent focused UI regressions cover deferred refresh after closing Detai
 and first recording before the initial status poll. The UI tracks the revision
 actually rendered, retaining refresh work while a dialog/input owns focus. All 13
 UI tests passed locally in Chromium; the PR's current CI rechecks them on Edge.
+
+
+A final legacy-client regression verifies Stop/resume against old HTTP queues and
+continuing cumulative counters: pre-consent queued samples reject, the next sample
+establishes a new server-side baseline, and stopped time receives no credit. This
+preserves 0.1.1 event ingestion without relying on an old client to implement hello.
+The complete Rust suite now has 95 passing tests locally; current CI rechecks it.

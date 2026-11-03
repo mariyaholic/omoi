@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix='omoi-cost-') as td:
         off=sample(ui);api('setup',{'generation':0,'choice':'enabled'});idle=sample(ui)
         local=api('setup/token',{});before_disk=disk(home);before=counters(ui);latency=[]
         for n in range(100):
-            event=dict(event_id=f'fixture:{n}',producer_id='fixture',seq=n,url='https://www.youtube.com/watch?v=abcdefghijk',at_ms=1700000000000+n*1000,state='playing',position_ms=n*1000,cumulative_played_ms=n*1000,title='Synthetic resource fixture',channel=None,duration_s=600)
+            event=dict(event_id=f'fixture:{n}',producer_id='fixture',seq=n,url='https://www.youtube.com/watch?v=abcdefghijk',at_ms=int(time.time()*1000)+n*1000,state='playing',position_ms=n*1000,cumulative_played_ms=n*1000,title='Synthetic resource fixture',channel=None,duration_s=600)
             start=time.monotonic()
             with urllib.request.urlopen(urllib.request.Request(f'http://127.0.0.1:{port}/event',data=json.dumps(event).encode(),headers={'X-Omoi-Token':local['token'],'Content-Type':'application/json'}),timeout=10) as r:r.read()
             deadline=time.monotonic()+5

@@ -1,7 +1,8 @@
-# Cloud handoff: reduce installation friction
+# Cloud handoff: guided setup implementation
 
-Prepared 2026-11-03. This is the next implementation assignment, not a claim that
-the proposed installation flow already exists. Cloud means a development checkout;
+Updated 2026-11-03 on `feat/guided-setup`. IF1–IF7 source implementation and synthetic validation are in progress; Windows/device release gates remain explicit. See [current acceptance](docs/guided-setup-acceptance.md), [setup instructions](docs/SETUP.md) and [protocol](docs/capture-protocol.md).
+
+The original assignment follows for context. Cloud means a development checkout;
 Omoi remains a local application, with no hosted catalogue or cloud ingestion.
 
 ## Start here
@@ -13,9 +14,7 @@ Omoi remains a local application, with no hosted catalogue or cloud ingestion.
    desktop/icon work is already merged. Do not restart the historical U1 scaffold.
 3. Inspect `git status --short --branch`, the current CI workflow and toolchain.
    Preserve unrelated edits. Work on a feature branch; never push/rewrite main.
-4. Implement IF1 through IF7 in the plan, beginning with IF1 status contracts and
-   regression fixtures, then IF2 managed capture. Complete useful independent work
-   when Windows, store credentials or real-device checks are unavailable.
+4. Continue from the implemented setup/managed listener/native companion and installer sources. Do not recreate the scaffold. Resolve the remaining acceptance gates recorded in docs/guided-setup-acceptance.md.
 
 ## Goal
 

@@ -15,6 +15,8 @@ struct Cli {
 enum Commands {
     /// Receive opt-in userscript playback events until stopped. Does not install a task.
     Listen,
+    #[command(hide = true)]
+    CollectScheduled,
     /// Open the local catalogue UI. Prints a private launch URL; exits after idle timeout.
     Ui {
         /// Launch the default browser after the local server starts.
@@ -111,6 +113,25 @@ fn execute(cli: Cli) -> Result<u8> {
     let paths = Paths::resolve(&env)?;
     let mut config = Config::load(&paths.config)?;
     match cli.command {
+        Commands::CollectScheduled => {
+            let c = crate::db::open(&paths.db, &config, false)?;
+            let setup = crate::setup::Setup::load(&c)?;
+            if setup.profiles.is_empty() {
+                return Err(Error::Config(
+                    "Select profiles in Omoi Sources before enabling automatic collection".into(),
+                ));
+            }
+            drop(c);
+            let report = crate::collect::collect_selected(
+                &config,
+                &paths,
+                &env,
+                false,
+                Some(&setup.profiles),
+            )?;
+            output(&report)?;
+            return Ok(if report.profiles_failed > 0 { 3 } else { 0 });
+        }
         Commands::Listen => crate::listener::serve(paths)?,
         Commands::Ui {
             port,

@@ -1,6 +1,6 @@
 # Installation and playback setup roadmap
 
-Status: implementation plan, 2026-11-03. Entry point:
+Status: implementation branch, 2026-11-03. Source and synthetic coverage now exist for IF1–IF7; full Windows/Edge/device acceptance is not implied. See [acceptance and remaining gates](guided-setup-acceptance.md), [setup](SETUP.md) and [transport contract](capture-protocol.md). Original roadmap requirements follow. Entry point:
 [CLOUD_HANDOFF.md](../CLOUD_HANDOFF.md). Baseline: merged PR #4, schema 3,
 desktop wrapper and userscript 0.1.1. This document supersedes historical
 foundation work orders for the installation task; it does not redefine catalogue
@@ -193,8 +193,7 @@ a dialog. Stop/disable and re-enable must be idempotent.
 IF1 → IF2 → IF3 is the first usable slice; IF4 builds on it. IF5 can proceed once
 IF1/IF2 contracts stabilize; IF6 needs the host identity/protocol contract. IF7 closes
 the integrated flow. Cloud agents may make routine implementation choices and
-continue through these packages without repeatedly asking to proceed. No production
-feature is implemented by this documentation commit.
+continue through these packages without repeatedly asking to proceed. The original documentation commit implemented no production feature. The current implementation branch adds the source/tests described in the acceptance record.
 
 ## Acceptance matrix
 

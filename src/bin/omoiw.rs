@@ -11,7 +11,7 @@ fn main() -> std::process::ExitCode {
             return std::process::ExitCode::from(2);
         }
         std::env::set_var("OMOI_HOME", &args[1]);
-        std::process::ExitCode::from(omoi::cli::run_from(["omoi", "collect"]))
+        std::process::ExitCode::from(omoi::cli::run_from(["omoi", "collect-scheduled"]))
     }
     #[cfg(not(windows))]
     {

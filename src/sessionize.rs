@@ -26,6 +26,14 @@ pub fn available() -> bool {
     true
 }
 pub fn enqueue(c: &mut Connection, body: &str, offset: i32) -> Result<bool> {
+    enqueue_checked(c, body, offset, None)
+}
+pub fn enqueue_checked(
+    c: &mut Connection,
+    body: &str,
+    offset: i32,
+    binding: Option<(&str, u64)>,
+) -> Result<bool> {
     let invalid = || Error::Config("Invalid playback event".into());
     if body.len() > 16384 {
         return Err(invalid());
@@ -62,6 +70,23 @@ pub fn enqueue(c: &mut Connection, body: &str, offset: i32) -> Result<bool> {
         return Err(invalid());
     }
     let tx = c.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+    let mut setup = crate::setup::Setup::load(&tx)?;
+    if matches!(
+        setup.choice,
+        crate::setup::Choice::Stopped | crate::setup::Choice::Skipped
+    ) {
+        return Err(Error::Config("Capture stopped in Omoi".into()));
+    }
+    if let Some((binding, generation)) = binding {
+        if setup.choice != crate::setup::Choice::Enabled
+            || setup.binding != binding
+            || setup.capture_epoch != generation
+        {
+            return Err(Error::Config(
+                "Capture consent or catalogue binding changed; reconnect".into(),
+            ));
+        }
+    }
     if tx.execute(
         "INSERT OR IGNORE INTO playback_receipts VALUES(?1,?2,?3)",
         params![e.event_id, e.producer_id, e.seq],
@@ -128,12 +153,20 @@ pub fn enqueue(c: &mut Connection, body: &str, offset: i32) -> Result<bool> {
         count -= 1;
         bytes -= size;
     }
+    if !setup.binding.is_empty() {
+        setup.last_event = Some(chrono::Utc::now().timestamp());
+        setup.save(&tx)?;
+    }
     tx.commit()?;
     Ok(true)
 }
 pub fn run(tx: &Transaction<'_>) -> Result<u64> {
+    run_limited(tx, usize::MAX)
+}
+/// Managed capture commits at most 256 raw events per transaction.
+pub fn run_limited(tx: &Transaction<'_>, batches: usize) -> Result<u64> {
     let mut count = 0;
-    loop {
+    for _ in 0..batches {
         let rows = tx
             .prepare("SELECT id,body FROM raw_events ORDER BY at,id LIMIT 256")?
             .query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))?
@@ -200,6 +233,25 @@ pub fn run(tx: &Transaction<'_>) -> Result<u64> {
             count += 1;
         }
     }
+    if count > 0 {
+        let mut setup = crate::setup::Setup::load(tx)?;
+        if !setup.binding.is_empty() {
+            setup.last_processed = Some(chrono::Utc::now().timestamp());
+            setup.revision = setup.revision.saturating_add(1);
+            setup.save(tx)?;
+        }
+    }
+    Ok(count)
+}
+pub fn process_batch(c: &mut Connection) -> Result<u64> {
+    if !c.query_row("SELECT EXISTS(SELECT 1 FROM raw_events)", [], |r| {
+        r.get::<_, bool>(0)
+    })? {
+        return Ok(0);
+    }
+    let tx = c.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+    let count = run_limited(&tx, 1)?;
+    tx.commit()?;
     Ok(count)
 }
 /// Merge overlapping telemetry intervals using maximum observed density, never sum tabs.

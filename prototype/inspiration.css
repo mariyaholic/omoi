@@ -1,0 +1,70 @@
+/* Optional Omoi appearance studies, informed by the user's local Open Design
+   systems. See REFERENCE_REVIEW.md for paths, source/derived distinctions.
+   These scoped overrides do not modify the Uika canon or the source packages. */
+body[data-skin="paper"] {
+  --bg-deepest:#e9e2d5;
+  --bg-ground:#f3efe4;
+  --bg-panel:#e9e2d5;
+  --bg-panel-2:#ded4c4;
+  --bg-input:#f3efe4;
+  --platinum:#231f19;
+  --text:#231f19;
+  --text-bright:#231f19;
+  --muted:#685e51;
+  --slate:#685e51;
+  --line:#c5b9a6;
+  --line-subtle:#ded4c4;
+  --line-strong:#a69782;
+  --gold:#94301f;
+  --gold-bright:#94301f;
+  --gold-dim:#b75c47;
+  --gold-glow:rgba(148,48,31,.08);
+  --lavender:#685e51;
+  --reading-font:Georgia,"Times New Roman",serif;
+  --radius-sm:0px;
+  --radius-md:0px;
+  --radius-lg:0px;
+}
+body[data-skin="paper"] .searchbox,
+body[data-skin="paper"] .automation,
+body[data-skin="paper"] .platform-icon,
+body[data-skin="paper"] .select-control,
+body[data-skin="paper"] .detail-evidence,
+body[data-skin="paper"] .confirmation{border-radius:0}
+body[data-skin="paper"] .primary{color:var(--bg-ground)}
+body[data-skin="paper"] .page-heading h1{font-size:42px;letter-spacing:-.035em}
+body[data-skin="paper"] .day-heading{border-bottom-color:var(--muted)}
+body[data-skin="paper"] .suggestion-card h3{font-style:italic}
+body[data-skin="panel"] {
+  --bg-deepest:#121418;
+  --bg-ground:#121418;
+  --bg-panel:#1a1d23;
+  --bg-panel-2:#23272f;
+  --bg-input:#121418;
+  --platinum:#ebeef2;
+  --text:#ebeef2;
+  --text-bright:#ebeef2;
+  --muted:#8c94a0;
+  --slate:#8c94a0;
+  --line:#2a2f38;
+  --line-subtle:#242830;
+  --line-strong:#424955;
+  --gold:#d4b372;
+  --gold-bright:#e1c68e;
+  --gold-dim:#927d56;
+  --gold-glow:rgba(212,179,114,.10);
+  --lavender:#b6bfcd;
+  --reading-font:"Segoe UI",Tahoma,sans-serif;
+  --shadow:none;
+}
+body[data-skin="panel"] .page-heading h1{font-size:32px;font-weight:600;letter-spacing:-.6px}
+body[data-skin="panel"] .brand>span{font-weight:600;font-size:34px}
+body[data-skin="panel"] .section-title h2,
+body[data-skin="panel"] .settings-section h2,
+body[data-skin="panel"] .automation h2{font:600 20px/1.4 var(--ui-font)}
+body[data-skin="panel"] .suggestion-card h3{font:500 22px/1.4 var(--ui-font)}
+body[data-skin="panel"] .detail-sheet h2{font:600 27px/1.3 var(--ui-font)}
+body[data-skin="panel"] .history-row{padding-top:15px;padding-bottom:15px}
+.row-time{font-family:Consolas,"Courier New",monospace;font-size:11px;font-variant-numeric:tabular-nums}
+.appearance-note{font-size:12px;color:var(--soft);padding:15px 0;border-top:1px solid var(--line);line-height:1.8}
+@media(max-width:740px){body[data-skin="paper"] .page-heading h1{font-size:36px}}

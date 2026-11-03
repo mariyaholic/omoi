@@ -3,6 +3,7 @@ import argparse
 import ctypes
 from contextlib import closing
 import http.client
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -22,7 +23,12 @@ def main():
     parser.add_argument('--duration',type=int,default=0,help='Real elapsed seconds of synthetic telemetry at five-second intervals')
     parser.add_argument('--stress-inbox',action='store_true',help='Exercise a near-full 20 MB synthetic inbox')
     args = parser.parse_args()
+    if (args.duration or args.stress_inbox) and os.name!='nt':
+        parser.error('Resource acceptance currently requires Windows process counters')
+    if not 0<=args.duration<=7200:
+        parser.error('Duration must be 0..7200 seconds')
     binary = str(args.binary.resolve())
+    binary_sha256=hashlib.sha256(args.binary.read_bytes()).hexdigest()
     resources = {}
     with tempfile.TemporaryDirectory(prefix='omoi-playback-') as directory:
         root = Path(directory)
@@ -58,12 +64,14 @@ def main():
 
             def post(event, extra=None, method='POST', path='/event'):
                 conn = http.client.HTTPConnection('127.0.0.1', port, timeout=10)
-                conn.request(method, path, json.dumps(event), {'Content-Type': 'application/json', 'X-Omoi-Token': token} | (extra or {}))
-                result = conn.getresponse()
-                status = result.status
-                result.read()
-                conn.close()
-                return status
+                try:
+                    conn.request(method, path, json.dumps(event), {'Content-Type': 'application/json', 'X-Omoi-Token': token} | (extra or {}))
+                    result = conn.getresponse()
+                    status = result.status
+                    result.read()
+                    return status
+                finally:
+                    conn.close()
 
             first = dict(event_id='test-0', producer_id='test', seq=0, url='https://www.youtube.com/watch?v=abcdefghijk', at_ms=1700000000000,
                          state='playing', position_ms=0, cumulative_played_ms=0, title='Capture fixture', channel='Fixture', duration_s=600)
@@ -75,8 +83,10 @@ def main():
             assert post(first, method='GET', path='/api/history') == 403
             try:
                 assert post(first | {'title': 'x' * 17000}) == 403
-            except ConnectionResetError:
-                pass  # Windows may reset a rejected socket with unread oversized input.
+            except (ConnectionResetError,ConnectionAbortedError,BrokenPipeError,http.client.RemoteDisconnected):
+                pass  # Rejecting before consuming an oversized body can abort/reset the socket.
+            with closing(sqlite3.connect(root/'history.sqlite')) as conn:
+                assert conn.execute('SELECT count(*) FROM raw_events').fetchone()==(0,)
             assert post(first) == 200
             assert post(first) == 200
             proc.terminate()
@@ -145,18 +155,32 @@ def main():
                         time.sleep(min(5,args.duration-elapsed))
                     assert psapi.GetProcessMemoryInfo(int(proc._handle),ctypes.byref(memory),memory.cb)
                     resources['sustained']={'elapsed_seconds':time.monotonic()-start_time,'events':seq,'listener_cpu_seconds':(cpu()-start_cpu)/1000,'working_set_bytes':memory.working,'lifetime_peak_bytes':memory.peak_working,'scope':'real-time synthetic HTTP playback telemetry; excludes browser/decoder and collector'}
+                    proc.terminate()
+                    proc.wait(timeout=10)
                     completed=subprocess.run([binary,'collect'],env=env,capture_output=True,text=True,timeout=60)
                     assert completed.returncode==0,completed.stderr
                     with closing(sqlite3.connect(root/'history.sqlite')) as conn:
+                        played_ms=conn.execute("SELECT played_ms FROM playback_state WHERE producer='load'").fetchone()[0]
+                        assert abs(played_ms-args.duration*1000)<1000,(played_ms,args.duration)
+                        resources['sustained']['processed_played_ms']=played_ms
+                        resources['catalogue_bytes_before_checkpoint']=sum(p.stat().st_size for p in root.glob('history.sqlite*'))
                         conn.execute('PRAGMA wal_checkpoint(TRUNCATE)')
-                        resources['processed_catalogue_bytes']=sum(p.stat().st_size for p in root.glob('history.sqlite*'))
+                        page_size=conn.execute('PRAGMA page_size').fetchone()[0]
+                        resources['page_bytes']=conn.execute('PRAGMA page_count').fetchone()[0]*page_size
+                        resources['freelist_bytes']=conn.execute('PRAGMA freelist_count').fetchone()[0]*page_size
+                    resources['processed_catalogue_bytes']=sum(p.stat().st_size for p in root.glob('history.sqlite*'))
         finally:
             proc.terminate()
             proc.wait(timeout=10)
     budgets={}
     if resources:
         budgets['listener_peak_at_most_10mb']=max(resources['peak_working_set_bytes'],resources.get('full_inbox',{}).get('lifetime_peak_bytes',0),resources.get('sustained',{}).get('lifetime_peak_bytes',0))<=10000000
-    receipt={'result':'pass' if all(budgets.values()) else 'failed','functional_result':'pass','resource_budgets':budgets,'checks':['listener auth','hostile requests','restart','duplicate replay','collection','metadata','port collision'],'resources':resources}
+    checks=['listener auth','hostile requests','restart','duplicate replay','collection','metadata','port collision']
+    if args.stress_inbox:
+        checks.append('20 MB inbox eviction cap')
+    if args.duration:
+        checks.append('real-time event load and processed playback duration')
+    receipt={'result':'pass' if all(budgets.values()) else 'failed','binary_sha256':binary_sha256,'functional_result':'pass','resource_budgets':budgets,'checks':checks,'resources':resources}
     if args.out:
         args.out.write_text(json.dumps(receipt,indent=2),encoding='utf-8')
     print(json.dumps(receipt,indent=2))

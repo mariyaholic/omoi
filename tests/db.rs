@@ -10,7 +10,7 @@ fn migration_0001_idempotent() {
     let mut c = conn();
     db::migrate(&mut c).unwrap();
     db::migrate(&mut c).unwrap();
-    assert_eq!(db::info(&c).unwrap().user_version, 1);
+    assert_eq!(db::info(&c).unwrap().user_version, 2);
     for table in [
         "items",
         "views",
@@ -42,7 +42,7 @@ fn migration_rollback() {
 #[test]
 fn reject_future_schema() {
     let mut c = conn();
-    c.execute_batch("PRAGMA user_version=2").unwrap();
+    c.execute_batch("PRAGMA user_version=3").unwrap();
     assert!(matches!(
         db::migrate(&mut c),
         Err(omoi::Error::SchemaTooNew { .. })

@@ -68,6 +68,30 @@ fn collect_week_idempotent() {
     assert_eq!(rows[0]["title"], "A title");
     assert_eq!(rows[0]["approx_duration_s"], 2);
 }
+
+#[test]
+fn collect_write_failure_rolls_back_items_and_checkpoints() {
+    let f = Fixture::new();
+    f.setup();
+    assert!(f.run(&["db", "migrate"]).status.success());
+    let c = Connection::open(f.0.join("home/history.sqlite")).unwrap();
+    c.execute_batch("CREATE TRIGGER fail_view BEFORE INSERT ON views BEGIN SELECT RAISE(ABORT,'injected write failure'); END").unwrap();
+    let failed = f.run(&["collect"]);
+    assert!(!failed.status.success());
+    for table in ["items", "views", "checkpoints"] {
+        assert_eq!(
+            c.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+    }
+    c.execute_batch("DROP TRIGGER fail_view").unwrap();
+    let retry = f.run(&["collect"]);
+    assert!(retry.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&retry.stdout).unwrap();
+    assert_eq!(report["views_inserted"], 1);
+}
 #[test]
 fn collect_dry_run() {
     let f = Fixture::new();

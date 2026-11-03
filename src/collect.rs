@@ -265,6 +265,7 @@ fn collect_once(
         }
         tx.execute("INSERT INTO checkpoints(source,cursor) VALUES(?1,?2) ON CONFLICT(source) DO UPDATE SET cursor=excluded.cursor",rusqlite::params![p.source,serde_json::to_string(&p.cursor).map_err(|e|Error::Export(e.to_string()))?])?;
     }
+    crate::sessionize::run(&tx)?;
     tx.commit()?;
     if crate::db::maintenance::optimize_due(&mut conn, chrono::Utc::now().timestamp()).is_err() {
         report.warnings.push("weekly optimization deferred".into());

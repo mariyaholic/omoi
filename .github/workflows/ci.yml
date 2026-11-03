@@ -37,3 +37,7 @@ jobs:
         run: cargo +${{ matrix.toolchain }} build --locked --release --bins --example synthetic
       - name: Synthetic release journey
         run: python scripts/smoke.py --bin-dir target/release
+      - name: Playback transport and restart
+        run: python scripts/verify_playback.py --binary target/release/omoi${{ runner.os == 'Windows' && '.exe' || '' }}
+      - name: Userscript capture semantics
+        run: node --test tests/userscript.test.cjs

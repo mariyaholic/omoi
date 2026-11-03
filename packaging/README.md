@@ -1,5 +1,7 @@
 # Omoi for Windows
 
+Metadata/tag editing is in Details, exports are in Settings, and scheduling controls are in Sources. Optional playback setup is in **PLAYBACK.md**; launch **Run Playback.cmd** separately and install **omoi.user.js**. Capture does not start automatically. **COMPLETION.md** records behavior and remaining acceptance.
+
 1. Extract this ZIP to a folder.
 2. Double-click **Run Omoi.cmd**. Keep the console open while using the app.
 3. If the browser does not open, copy the URL printed in the console into Edge or another browser.
@@ -24,6 +26,6 @@ omoi.exe schedule remove
 
 Keep both executables in a stable folder before installing a task. The task uses `config.toml` settings, not the UI's temporary profile selection.
 
-Deletion permanently removes an item and its catalogue records. It does not delete browser history or video files. Browser openings and approximate tab time are not proof of playback. Tag editing, metadata enrichment and playback capture remain future features; suggestion shelves may be empty when their required data is absent.
+Deletion permanently removes an item and its catalogue records. It does not delete browser history or video files. Browser openings and approximate tab time are not proof of playback. Suggestions use edited or captured tags/durations/sessions; shelves may be empty when required data is absent. Remote metadata APIs are not connected.
 
 This package contains a locally verified development build, not a signed public release. `UI.md` describes behavior and request boundaries. `MEASUREMENTS.md` and `verification.json` record the synthetic checks and their limits. No personal browsing data is included.

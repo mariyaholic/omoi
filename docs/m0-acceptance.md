@@ -1,5 +1,7 @@
 # M0 acceptance record — 2026-11-03
 
+Follow-through update: [current UI/playback notes](completion-20261103.md) and [new measurements](../ui/MEASUREMENTS.md) supersede earlier unavailable-feature statements. The isolated Windows install/run/remove smoke now passes and exposed/fixed a COM XML encoding defect; real logon/battery and retained-week acceptance remain open. An injected view-write failure now verifies item/view/checkpoint rollback and a successful retry. Earlier CLI resource measurements below remain tied to their original binary.
+
 Decision: **usable CLI baseline; full M0 acceptance remains open**. This is a measured implementation record, not a release certificate. All history used for automated checks and resource runs is generated locally. No personal history or cookies were read, and no scheduled task was installed.
 
 ## Implemented behavior

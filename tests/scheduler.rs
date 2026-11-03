@@ -9,6 +9,9 @@ fn schedule_xml_contract() {
         directory: r"D:\Apps",
     };
     let xml = task_xml(&s).unwrap();
+    // COM receives a UTF-16 BSTR, even though the transport file is UTF-8.
+    // A UTF-8 declaration makes Task Scheduler reject that BSTR.
+    assert!(!xml.contains("encoding="));
     for fragment in [
         "PT1H",
         "LogonTrigger",

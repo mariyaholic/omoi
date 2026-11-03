@@ -83,11 +83,7 @@ fn item(c: &Connection, id: i64) -> Result<Value> {
     value["tags"] = json!(tags
         .query_map([id], |r| r.get::<_, String>(0))?
         .collect::<std::result::Result<Vec<_>, _>>()?);
-    value["played_seconds"] = json!(c.query_row(
-        "SELECT sum(played_s) FROM sessions WHERE item_id=?",
-        [id],
-        |r| r.get::<_, Option<i64>>(0)
-    )?);
+    value["played_seconds"] = json!(crate::sessionize::total(c, id)?);
     Ok(value)
 }
 
@@ -109,7 +105,7 @@ pub fn authorized(
             == 0
 }
 
-fn random_token() -> Result<String> {
+pub(crate) fn random_token() -> Result<String> {
     let mut bytes = [0u8; 32];
     #[cfg(windows)]
     unsafe {
@@ -133,13 +129,17 @@ fn io(source: std::io::Error) -> Error {
     }
 }
 
-struct Request {
-    method: String,
-    target: String,
-    headers: BTreeMap<String, String>,
-    body: Vec<u8>,
+pub(crate) struct Request {
+    pub method: String,
+    pub target: String,
+    pub headers: BTreeMap<String, String>,
+    pub body: Vec<u8>,
 }
-fn request(stream: &mut TcpStream) -> std::io::Result<Request> {
+pub(crate) fn request(
+    stream: &mut TcpStream,
+    max_header: usize,
+    max_body: usize,
+) -> std::io::Result<Request> {
     let invalid = || std::io::Error::new(std::io::ErrorKind::InvalidData, "invalid request");
     stream.set_read_timeout(Some(Duration::from_secs(2)))?;
     stream.set_write_timeout(Some(Duration::from_secs(5)))?;
@@ -148,12 +148,12 @@ fn request(stream: &mut TcpStream) -> std::io::Result<Request> {
     let mut bytes = Vec::new();
     let header_end = loop {
         if let Some(index) = bytes.windows(4).position(|b| b == b"\r\n\r\n") {
-            if index + 4 > 16384 {
+            if index + 4 > max_header {
                 return Err(invalid());
             }
             break index + 4;
         }
-        if bytes.len() >= 16384 || Instant::now() >= deadline {
+        if bytes.len() >= max_header || Instant::now() >= deadline {
             return Err(invalid());
         }
         let mut buffer = [0u8; 2048];
@@ -198,7 +198,7 @@ fn request(stream: &mut TcpStream) -> std::io::Result<Request> {
         .transpose()
         .map_err(|_| invalid())?
         .unwrap_or(0);
-    if length > 65536 {
+    if length > max_body {
         return Err(invalid());
     }
     let mut body = vec![0; length];
@@ -236,7 +236,11 @@ fn response(stream: &mut TcpStream, status: u16, mime: &str, data: &[u8]) -> std
     write!(stream,"HTTP/1.1 {status} {reason}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nCross-Origin-Resource-Policy: same-origin\r\nContent-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'\r\n\r\n",data.len())?;
     stream.write_all(data)
 }
-fn json_response(stream: &mut TcpStream, status: u16, value: Value) -> std::io::Result<()> {
+pub(crate) fn json_response(
+    stream: &mut TcpStream,
+    status: u16,
+    value: Value,
+) -> std::io::Result<()> {
     response(
         stream,
         status,
@@ -263,6 +267,32 @@ fn api(req: &Request, paths: &Paths, env: &PathEnvironment, idle_seconds: u64) -
         .collect::<BTreeMap<_, _>>();
     let c = crate::db::open(&paths.db, &config, false)?;
     match (req.method.as_str(), url.path()) {
+        ("POST", "/api/edit") => {
+            let body: Value = serde_json::from_slice(&req.body)
+                .map_err(|_| Error::Config("Invalid metadata".into()))?;
+            let mut writer = crate::db::open(&paths.db, &config, true)?;
+            crate::metadata::edit(&mut writer, &body)?;
+            Ok(json!({"saved":true}))
+        }
+        ("POST", "/api/playback/process") => {
+            let mut writer = crate::db::open(&paths.db, &config, true)?;
+            let tx = writer.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+            let count = crate::sessionize::run(&tx)?;
+            tx.commit()?;
+            Ok(json!({"processed":count}))
+        }
+        ("GET", "/api/playback") => Ok(
+            json!({"port":config.listener_port,"token_file":paths.home.join("listener/token"),"pending":c.query_row("SELECT count(*) FROM raw_events",[],|r|r.get::<_,i64>(0))?,"dropped":c.query_row("SELECT value FROM playback_stats WHERE key='dropped'",[],|r|r.get::<_,i64>(0))?}),
+        ),
+        ("POST", "/api/schedule") => {
+            let body: Value = serde_json::from_slice(&req.body)
+                .map_err(|_| Error::Config("Invalid scheduling request".into()))?;
+            let action = body["action"]
+                .as_str()
+                .filter(|s| ["install", "remove", "status"].contains(s))
+                .ok_or_else(|| Error::Config("Invalid scheduling action".into()))?;
+            Ok(json!({"output":crate::scheduler::result(action,&paths.home)?}))
+        }
         ("GET", "/api/info") => {
             let mut p = c.prepare("SELECT DISTINCT platform FROM items ORDER BY platform")?;
             let platforms = p
@@ -398,7 +428,7 @@ pub fn serve(
             continue;
         }
         stream.set_nonblocking(false).map_err(io)?;
-        let req = match request(&mut stream) {
+        let req = match request(&mut stream, 16384, 65536) {
             Ok(r) => r,
             Err(_) => {
                 let _ = json_response(
@@ -438,6 +468,15 @@ pub fn serve(
                 );
                 continue;
             }
+            if req.method == "GET"
+                && ["/api/export.json", "/api/export.csv"].contains(&req.target.as_str())
+            {
+                if download(&mut stream, &paths, req.target.ends_with(".json")).is_err() {
+                    let _ = json_response(&mut stream, 400, json!({"error":"Export failed"}));
+                }
+                active = Instant::now();
+                continue;
+            }
             match api(&req, &paths, &env, idle_seconds) {
                 Ok(v) => {
                     let _ = json_response(&mut stream, 200, v);
@@ -450,6 +489,7 @@ pub fn serve(
             active = Instant::now();
         } else if req.method == "GET" {
             let asset = match req.target.as_str() {
+                "/forms.css" => Some(("text/css; charset=utf-8", include_str!("../ui/forms.css"))),
                 "/" => Some(("text/html; charset=utf-8", include_str!("../ui/index.html"))),
                 "/app.js" => Some((
                     "text/javascript; charset=utf-8",
@@ -479,5 +519,24 @@ pub fn serve(
             let _ = json_response(&mut stream, 403, json!({"error":"Forbidden"}));
         }
     }
+    Ok(())
+}
+
+fn download(stream: &mut TcpStream, paths: &Paths, json: bool) -> Result<()> {
+    let config = Config::load(&paths.config)?;
+    let c = crate::db::open(&paths.db, &config, false)?;
+    let temp = crate::readers::snapshot::TempDir::create(&paths.tmp)?;
+    let mut f = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create_new(true)
+        .open(temp.0.join("export"))
+        .map_err(io)?;
+    crate::export::export(&c, json, &mut f)?;
+    use std::io::Seek;
+    f.rewind().map_err(io)?;
+    let ext = if json { "json" } else { "csv" };
+    write!(stream,"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Disposition: attachment; filename=\"omoi-history.{ext}\"\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nContent-Security-Policy: default-src 'none'\r\n\r\n",f.metadata().map_err(io)?.len()).map_err(io)?;
+    std::io::copy(&mut f, stream).map_err(io)?;
     Ok(())
 }

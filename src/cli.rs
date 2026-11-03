@@ -13,6 +13,8 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Commands {
+    /// Receive opt-in userscript playback events until stopped. Does not install a task.
+    Listen,
     /// Open the local catalogue UI. Prints a private launch URL; exits after idle timeout.
     Ui {
         /// Launch the default browser after the local server starts.
@@ -50,6 +52,9 @@ enum Commands {
     /// Install, inspect or remove the optional Windows hourly/logon task.
     #[command(hide = !cfg!(windows))]
     Schedule {
+        /// Separate task folder for an isolated catalogue or verification run.
+        #[arg(long, default_value = "Omoi")]
+        task_folder: String,
         #[command(subcommand)]
         command: Schedule,
     },
@@ -64,6 +69,7 @@ enum Commands {
 #[derive(Subcommand)]
 enum Schedule {
     Install,
+    Run,
     Remove,
     Status,
 }
@@ -105,6 +111,7 @@ fn execute(cli: Cli) -> Result<u8> {
     let paths = Paths::resolve(&env)?;
     let mut config = Config::load(&paths.config)?;
     match cli.command {
+        Commands::Listen => crate::listener::serve(paths)?,
         Commands::Ui {
             port,
             idle_seconds,
@@ -112,15 +119,21 @@ fn execute(cli: Cli) -> Result<u8> {
         } => {
             crate::ui::serve(paths, env, port, idle_seconds, open)?;
         }
-        Commands::Schedule { command } => {
-            crate::scheduler::execute(
+        Commands::Schedule {
+            command,
+            task_folder,
+        } => {
+            let result = crate::scheduler::result_named(
                 match command {
                     Schedule::Install => "install",
+                    Schedule::Run => "run",
                     Schedule::Remove => "remove",
                     Schedule::Status => "status",
                 },
                 &paths.home,
+                &task_folder,
             )?;
+            print!("{result}");
         }
         Commands::Recommend { item, seconds } => {
             let c = crate::db::open(&paths.db, &config, false)?;

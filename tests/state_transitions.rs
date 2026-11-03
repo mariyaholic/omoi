@@ -1,0 +1,210 @@
+use omoi::{
+    db,
+    dedupe::{self, Candidate},
+    metadata,
+    normalize::ItemKey,
+    sessionize, ui,
+};
+use rusqlite::Connection;
+use serde_json::json;
+
+fn database() -> Connection {
+    let mut c = Connection::open_in_memory().unwrap();
+    c.execute_batch("PRAGMA foreign_keys=ON").unwrap();
+    db::migrate(&mut c).unwrap();
+    c
+}
+fn candidate(key: &str, at: i64) -> Candidate {
+    Candidate {
+        key: ItemKey {
+            platform: "youtube".into(),
+            external_id: key.into(),
+        },
+        started_at: at,
+        source: "chrome".into(),
+        title: Some("Browser title".into()),
+        kind: None,
+        approx_duration_s: None,
+    }
+}
+fn ingest(c: &mut Connection, row: &Candidate) {
+    let tx = c.transaction().unwrap();
+    dedupe::ingest(&tx, row).unwrap();
+    tx.commit().unwrap();
+}
+fn event(seq: i64, at: i64, played: i64) -> serde_json::Value {
+    json!({"event_id":format!("event-{seq}"),"producer_id":"producer","seq":seq,
+        "url":"https://www.youtube.com/watch?v=abcdefghijk","at_ms":at,
+        "state":"playing","position_ms":played,"cumulative_played_ms":played,
+        "title":null,"channel":null,"duration_s":null})
+}
+fn process(c: &mut Connection) {
+    let tx = c.transaction().unwrap();
+    sessionize::run(&tx).unwrap();
+    tx.commit().unwrap();
+}
+
+#[test]
+fn deleted_identity_cannot_be_reused_by_a_stale_edit() {
+    let mut c = database();
+    ingest(&mut c, &candidate("abcdefghijk", 1000));
+    assert!(ui::delete_item(&mut c, 1).unwrap());
+    ingest(&mut c, &candidate("12345678901", 2000));
+    let id: i64 = c
+        .query_row("SELECT id FROM items", [], |r| r.get(0))
+        .unwrap();
+    assert_ne!(id, 1);
+    assert!(metadata::edit(
+        &mut c,
+        &json!({"id":1,"title":"stale","channel":"","kind":"","duration_s":null,"tags":[]})
+    )
+    .is_err());
+}
+
+#[test]
+fn historical_reconciliation_does_not_resurrect_a_deleted_item() {
+    let mut c = database();
+    ingest(&mut c, &candidate("abcdefghijk", 1000));
+    ui::delete_item(&mut c, 1).unwrap();
+    ingest(&mut c, &candidate("abcdefghijk", 1000));
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    ingest(
+        &mut c,
+        &candidate("abcdefghijk", chrono::Utc::now().timestamp() + 1),
+    );
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        1
+    );
+}
+
+#[test]
+fn title_provenance_follows_the_actual_winning_writer() {
+    let mut c = database();
+    let mut row = candidate("abcdefghijk", 1000);
+    row.title = None;
+    ingest(&mut c, &row);
+    let tx = c.transaction().unwrap();
+    metadata::observed(&tx, 1, Some("Player title"), None, None).unwrap();
+    tx.commit().unwrap();
+    ingest(&mut c, &candidate("abcdefghijk", 1000));
+    let pair:(String,String)=c.query_row("SELECT title,source FROM items JOIN metadata_fields ON item_id=items.id WHERE field='title'",[],|r|Ok((r.get(0)?,r.get(1)?))).unwrap();
+    assert_eq!(pair, ("Browser title".into(), "chrome".into()));
+}
+
+#[test]
+fn fractional_interval_preserves_an_exact_second() {
+    let mut c = database();
+    for e in [event(0, 100000, 0), event(1, 101062, 1000)] {
+        sessionize::enqueue(&mut c, &e.to_string(), 0).unwrap();
+    }
+    process(&mut c);
+    assert_eq!(sessionize::total(&c, 1).unwrap(), 1);
+}
+
+#[test]
+fn duplicate_receipt_cannot_create_a_live_identity() {
+    let mut c = database();
+    let e = event(0, 1700000000000, 0);
+    sessionize::enqueue(&mut c, &e.to_string(), 0).unwrap();
+    let mut duplicate = e;
+    duplicate["producer_id"] = json!("other");
+    duplicate["url"] = json!("https://www.twitch.tv/maria");
+    assert!(!sessionize::enqueue(&mut c, &duplicate.to_string(), 0).unwrap());
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM playback_live_keys", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn live_identity_changes_after_an_ended_broadcast() {
+    let mut c = database();
+    for (seq, at, state) in [
+        (0, 1700000000000, "playing"),
+        (1, 1700000001000, "stopped"),
+        (2, 1700086400000, "playing"),
+    ] {
+        let mut e = event(seq, at, seq * 1000);
+        e["url"] = json!("https://www.twitch.tv/maria");
+        e["state"] = json!(state);
+        sessionize::enqueue(&mut c, &e.to_string(), 0).unwrap();
+        process(&mut c);
+    }
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        2
+    );
+}
+
+#[test]
+fn evicted_unprocessed_event_can_be_retried() {
+    let mut c = database();
+    let first = event(0, 1700000000000, 0);
+    sessionize::enqueue(&mut c, &first.to_string(), 0).unwrap();
+    c.execute_batch("WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<100000) INSERT INTO raw_events(at,source,body) SELECT x,'fixture','{}' FROM n").unwrap();
+    sessionize::enqueue(&mut c, &event(1, 1700000001000, 1000).to_string(), 0).unwrap();
+    assert!(sessionize::enqueue(&mut c, &first.to_string(), 0).unwrap());
+}
+
+#[test]
+fn orphaned_logging_path_does_not_disable_logging() {
+    let temp = omoi::readers::snapshot::TempDir::create(&std::env::temp_dir()).unwrap();
+    std::fs::write(temp.0.join("logging.lock"), b"").unwrap();
+    omoi::logging::record(&temp.0, &omoi::config::Config::default(), None, 0).unwrap();
+}
+
+#[test]
+fn durable_frontier_rejects_late_events_after_reopen() {
+    let temp = omoi::readers::snapshot::TempDir::create(&std::env::temp_dir()).unwrap();
+    let path = temp.0.join("history.sqlite");
+    {
+        let mut c = Connection::open(&path).unwrap();
+        db::migrate(&mut c).unwrap();
+        for e in [event(0, 100000, 0), event(2, 102000, 2000)] {
+            sessionize::enqueue(&mut c, &e.to_string(), 0).unwrap();
+        }
+        process(&mut c);
+    }
+    let mut c = Connection::open(&path).unwrap();
+    sessionize::enqueue(&mut c, &event(1, 101000, 1000).to_string(), 0).unwrap();
+    process(&mut c);
+    assert_eq!(sessionize::total(&c, 1).unwrap(), 2);
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM raw_events", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    sessionize::enqueue(&mut c, &event(3, 103000, 3000).to_string(), 0).unwrap();
+    process(&mut c);
+    assert_eq!(sessionize::total(&c, 1).unwrap(), 3);
+}
+
+#[test]
+fn pending_playback_cannot_resurrect_a_deleted_item() {
+    let mut c = database();
+    ingest(&mut c, &candidate("abcdefghijk", 100));
+    sessionize::enqueue(&mut c, &event(0, 100000, 0).to_string(), 0).unwrap();
+    ui::delete_item(&mut c, 1).unwrap();
+    process(&mut c);
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM raw_events", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+}

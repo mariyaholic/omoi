@@ -9,6 +9,9 @@ On Windows, launch `omoi-desktop.exe` for a standalone Omoi window without brows
 
 ## Open the app
 
+The [runtime state-machine inventory](docs/state-machines.md) describes transition
+ownership, retry/recovery rules, deletion semantics and known limits.
+
 ```text
 omoi-desktop.exe
 ```
@@ -36,7 +39,9 @@ omoi export --json --out watched.json
 
 `collect` reads supported browser history files through temporary snapshots. It stores normalized video identities, titles, visit times and available tab-duration approximations under `%LOCALAPPDATA%\omoi\history.sqlite`. This records openings, not proof of watching or completion. `--dry-run` reads the same sources but applies changes only to a temporary database. Review the discovered browser/profile scope before running either command on personal history. Close a browser and retry if Windows prevents copying its history.
 
-The collector exits after each run. Run it again to collect new visits; unchanged profiles are skipped. Reloads within 30 minutes of a fixed view anchor merge into that view. `--browser chrome`, `--browser edge`, `--browser brave` or `--browser firefox` restricts a run; repeat the option for multiple browsers. Export requires one format and refuses to overwrite an existing destination. Keep export files outside Omoi's data directory.
+The collector exits after each run. Unchanged profiles are skipped; changed profiles are reconciled in bounded batches so backfilled visits, replaced history files and updated observations are seen. This costs a scan of each changed profile. Reloads within 30 minutes of a fixed view anchor merge into that view. `--browser chrome`, `--browser edge`, `--browser brave` or `--browser firefox` restricts a run; repeat the option for multiple browsers. Export requires one format and refuses to overwrite an existing destination. Keep export files outside Omoi's data directory.
+
+Deleting an item removes its catalogue details, views and sessions. A minimal platform/identity/deletion-time record suppresses old history and pending playback during reconciliation. A later opening can add it again with a new numeric ID. Schema 3 installs this protection transactionally on first writable open.
 
 Optional `%LOCALAPPDATA%\omoi\config.toml` uses the restricted grammar in the architecture contract:
 

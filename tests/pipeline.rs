@@ -70,6 +70,60 @@ fn collect_week_idempotent() {
 }
 
 #[test]
+fn changed_history_reconciles_backdated_visits_and_updates() {
+    let f = Fixture::new();
+    f.setup();
+    let c = Connection::open(f.0.join("History")).unwrap();
+    c.execute_batch("UPDATE urls SET title=NULL WHERE id=1")
+        .unwrap();
+    drop(c);
+    assert!(f.run(&["collect"]).status.success());
+    let c = Connection::open(f.0.join("History")).unwrap();
+    c.execute_batch("UPDATE urls SET title='Late title' WHERE id=1; UPDATE visits SET visit_duration=120000000 WHERE id=1; INSERT INTO urls VALUES(3,'https://youtube.com/watch?v=12345678901','Backdated'); INSERT INTO visits VALUES(4,3,13299900000000000,0)").unwrap();
+    drop(c);
+    let r = f.run(&["collect"]);
+    assert!(r.status.success(), "{}", String::from_utf8_lossy(&r.stderr));
+    let c = Connection::open(f.0.join("home/history.sqlite")).unwrap();
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        2
+    );
+    assert_eq!(
+        c.query_row(
+            "SELECT title FROM items WHERE external_id='dQw4w9WgXcQ'",
+            [],
+            |r| r.get::<_, String>(0)
+        )
+        .unwrap(),
+        "Late title"
+    );
+    assert_eq!(
+        c.query_row("SELECT max(approx_duration_s) FROM views", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        120
+    );
+}
+
+#[test]
+fn replacement_with_higher_frontier_imports_its_older_prefix() {
+    let f = Fixture::new();
+    f.setup();
+    assert!(f.run(&["collect"]).status.success());
+    let c = Connection::open(f.0.join("History")).unwrap();
+    c.execute_batch("DELETE FROM visits;DELETE FROM urls;INSERT INTO urls VALUES(10,'https://youtube.com/watch?v=12345678901','Old prefix'),(11,'https://youtube.com/watch?v=abcdefghijk','New end');INSERT INTO visits VALUES(10,10,13299900000000000,0),(11,11,13300100000000000,0)").unwrap();
+    drop(c);
+    assert!(f.run(&["collect"]).status.success());
+    let c = Connection::open(f.0.join("home/history.sqlite")).unwrap();
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        3
+    );
+}
+
+#[test]
 fn collect_write_failure_rolls_back_items_and_checkpoints() {
     let f = Fixture::new();
     f.setup();
@@ -340,10 +394,17 @@ fn collect_log_failure_keeps_result_and_owned_lock() {
     std::fs::create_dir(&logs).unwrap();
     let lock = logs.join("logging.lock");
     std::fs::write(&lock, b"owned by another writer").unwrap();
+    let owner = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(&lock)
+        .unwrap();
+    owner.try_lock().unwrap();
     let output = f.run(&["collect"]);
     assert!(output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("file logging unavailable"));
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["views_inserted"], 1);
+    drop(owner);
     assert_eq!(std::fs::read(lock).unwrap(), b"owned by another writer");
 }

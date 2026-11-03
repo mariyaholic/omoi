@@ -62,6 +62,13 @@ pub fn enqueue(c: &mut Connection, body: &str, offset: i32) -> Result<bool> {
         return Err(invalid());
     }
     let tx = c.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+    if tx.execute(
+        "INSERT OR IGNORE INTO playback_receipts VALUES(?1,?2,?3)",
+        params![e.event_id, e.producer_id, e.seq],
+    )? == 0
+    {
+        return Ok(false);
+    }
     if key.platform == "twitch" && key.external_id.starts_with("live:") {
         let channel = key
             .external_id
@@ -69,23 +76,19 @@ pub fn enqueue(c: &mut Connection, body: &str, offset: i32) -> Result<bool> {
             .nth(1)
             .unwrap_or_default()
             .to_owned();
-        tx.execute(
-            "INSERT OR IGNORE INTO playback_live_keys VALUES(?1,?2,?3)",
-            params![e.producer_id, channel, key.external_id],
-        )?;
-        key.external_id = tx.query_row(
-            "SELECT external_id FROM playback_live_keys WHERE producer=?1 AND channel=?2",
+        let prior: Option<(String,i64,i64,bool)> = tx.query_row(
+            "SELECT external_id,last_seq,last_at_ms,stopped FROM playback_live_keys WHERE producer=?1 AND channel=?2",
             params![e.producer_id, channel],
-            |r| r.get(0),
-        )?;
-    }
-    if tx.execute(
-        "INSERT OR IGNORE INTO playback_receipts VALUES(?1,?2,?3)",
-        params![e.event_id, e.producer_id, e.seq],
-    )? == 0
-    {
-        tx.commit()?;
-        return Ok(false);
+            |r| Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?)),
+        ).optional()?;
+        if let Some((key_before, seq, at, stopped)) = &prior {
+            if *seq < 0 || e.seq <= *seq || (!stopped && e.at_ms.saturating_sub(*at) <= 300000) {
+                key.external_id = key_before.clone();
+            }
+        }
+        if prior.as_ref().is_none_or(|p| e.seq > p.1) {
+            tx.execute("INSERT INTO playback_live_keys(producer,channel,external_id,last_seq,last_at_ms,stopped) VALUES(?1,?2,?3,?4,?5,?6) ON CONFLICT(producer,channel) DO UPDATE SET external_id=excluded.external_id,last_seq=excluded.last_seq,last_at_ms=excluded.last_at_ms,stopped=excluded.stopped",params![e.producer_id,channel,key.external_id,e.seq,e.at_ms,e.state=="stopped"])?;
+        }
     }
     let at = e.at_ms;
     let body = serde_json::to_string(&Stored { event: e, key }).map_err(|_| invalid())?;
@@ -102,11 +105,21 @@ pub fn enqueue(c: &mut Connection, body: &str, offset: i32) -> Result<bool> {
         |r| Ok((r.get(0)?, r.get(1)?)),
     )?;
     while count > 100000 || bytes > 20000000 {
-        let (id, size): (i64, i64) = tx.query_row(
-            "SELECT id,length(CAST(body AS BLOB)) FROM raw_events ORDER BY id LIMIT 1",
+        let (id, size, body): (i64, i64, String) = tx.query_row(
+            "SELECT id,length(CAST(body AS BLOB)),body FROM raw_events ORDER BY id LIMIT 1",
             [],
-            |r| Ok((r.get(0)?, r.get(1)?)),
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
         )?;
+        if let Ok(stored) = serde_json::from_str::<Stored>(&body) {
+            tx.execute(
+                "DELETE FROM playback_receipts WHERE event_id=?1 AND producer=?2 AND seq=?3",
+                params![
+                    stored.event.event_id,
+                    stored.event.producer_id,
+                    stored.event.seq
+                ],
+            )?;
+        }
         tx.execute("DELETE FROM raw_events WHERE id=?", [id])?;
         tx.execute(
             "UPDATE playback_stats SET value=value+1 WHERE key='dropped'",
@@ -132,6 +145,10 @@ pub fn run(tx: &Transaction<'_>) -> Result<u64> {
             let stored: Stored = serde_json::from_str(&body)
                 .map_err(|_| Error::Config("Invalid stored playback event".into()))?;
             let e = stored.event;
+            if crate::dedupe::forgotten(tx, &stored.key, e.at_ms / 1000)? {
+                tx.execute("DELETE FROM raw_events WHERE id=?", [raw])?;
+                continue;
+            }
             let previous:Option<(i64,i64,i64,i64,i64,i64,bool)>=tx.query_row("SELECT seq,item_id,session_id,at_ms,counter_ms,played_ms,stopped FROM playback_state WHERE producer=?",[&e.producer_id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?))).optional()?;
             if previous
                 .is_some_and(|p| e.seq <= p.0 || e.at_ms < p.3 || e.cumulative_played_ms < p.4)
@@ -210,5 +227,7 @@ pub fn total(c: &Connection, item: i64) -> Result<i64> {
         }
         prev = at;
     }
-    Ok((sum / 1000.0).floor() as i64)
+    // Inputs measure whole milliseconds. Round numerical integration back to
+    // that resolution before truncating seconds (1000/1062 must remain 1 s).
+    Ok(sum.round() as i64 / 1000)
 }

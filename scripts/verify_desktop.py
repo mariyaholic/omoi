@@ -16,12 +16,16 @@ import time
 def remove_closed_profile(profile):
     # WebView2 children release their profile asynchronously after controller close.
     assert profile.resolve().is_relative_to(Path(tempfile.gettempdir()).resolve())
-    for _ in range(100):
+    for _ in range(300):
         try:
             shutil.rmtree(profile)
             return
         except FileNotFoundError:
-            return
+            # A WebView2 child may delete a nested file during rmtree. Only
+            # disappearance of the profile root means cleanup has completed.
+            if not profile.exists():
+                return
+            time.sleep(0.1)
         except OSError as error:
             if error.winerror not in (5,32,145):
                 raise
@@ -53,8 +57,8 @@ def main():
         for key in ('LOCALAPPDATA','APPDATA','HOME','XDG_CONFIG_HOME','XDG_DATA_HOME'):
             env[key]=str(root/'empty-browser-roots')
         run=subprocess.run([str(binaries/'omoi-desktop.exe'),'--check'],env=env,capture_output=True,text=True,timeout=45,creationflags=subprocess.CREATE_NO_WINDOW)
-        assert run.returncode==0,f'Desktop check exited {run.returncode}: {run.stderr}'
         remove_closed_profile(home/'webview')
+        assert run.returncode==0,f'Desktop check exited {run.returncode}: {run.stderr}'
     print('PASS: hidden native window, authenticated catalogue, five themes, appearance/reload, clean exit')
 
 

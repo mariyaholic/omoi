@@ -44,6 +44,7 @@ def main():
     for name in ('Run Omoi.cmd','Run Playback.cmd','README.md'):
         content[name]=(repo/'packaging'/name).read_bytes()
     content['omoi.user.js']=(repo/'userscripts/omoi.user.js').read_bytes()
+    content['Omoi.ico']=(repo/'assets/icon.ico').read_bytes()
     for name in tracked:
         if name.startswith('docs/') and name.endswith(('.md','.json')) or name.startswith('ui/') and name.endswith('.json') or name in ('ui/README.md','ui/MEASUREMENTS.md','userscripts/README.md'):
             content[name]=(repo/name).read_bytes()

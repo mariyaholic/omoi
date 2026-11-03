@@ -82,17 +82,7 @@ mod desktop {
         );
         let events = EventLoopBuilder::<bool>::with_user_event().build();
         let proxy = events.create_proxy();
-        let mut pixels = Vec::with_capacity(32 * 32 * 4);
-        for y in 0i32..32 {
-            for x in 0i32..32 {
-                let radius = (x - 16) * (x - 16) + (y - 16) * (y - 16);
-                pixels.extend_from_slice(if (70..=150).contains(&radius) {
-                    &[166, 180, 250, 255]
-                } else {
-                    &[25, 26, 45, 255]
-                });
-            }
-        }
+        let pixels = include_bytes!("../../assets/icon-32.rgba").to_vec();
         let window = WindowBuilder::new()
             .with_title("Omoi")
             .with_visible(!check)

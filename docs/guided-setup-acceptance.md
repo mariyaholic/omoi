@@ -15,7 +15,7 @@ were present on the requested branch. No owner data, paths or private receipts u
 | IF3 | Guided optional capture, resumable step, explicit credential copy, script export/import fallback, authenticated hello, shared 0.2.0 capture core | Real Edge manager permission/foreground-dialog journey |
 | IF4 | Generation-owned replies, automatic catalogue refresh, persisted exact scheduled scope, explicit native background opt-in | Physical logon/sleep/battery; no desktop auto-launch feature promised |
 | IF5 | Packaged MV3 companion, bounded serialized durable worker queue, Rust native host, exact origin and catalogue/consent binding, protocol negotiation | Actual Edge extension→host journey, permission UI, multi-profile/provider/DRM behavior |
-| IF6 | Inno per-user installer source, portable package updates, exact-ID HKCU registration/repair/removal, preservation tests | Hosted Windows installer/registry/portable results; clean Windows device and missing-runtime recovery |
+| IF6 | Inno per-user installer, portable package, exact-ID HKCU registration/repair/removal; hosted Windows install/reinstall/uninstall and preservation checks passed | Clean Windows device, true cross-version upgrade and missing-runtime recovery |
 | IF7 | Reproducible tests, Linux synthetic measurements, CI gates, setup/protocol/handoff docs | Signing, store identity/publication and physical-device gates are owner release work |
 
 These are source/logic deliverables, not a declaration that every roadmap acceptance
@@ -35,7 +35,7 @@ Implementation validation:
 - `cargo test --locked --all-targets`: 94 passing Rust tests
 - `node --test tests/userscript.test.cjs tests/extension.test.cjs`: 16 passing tests
 - `python tests/desktop_state.py`: two passing cleanup tests
-- `OMOI_TEST_BROWSER=/usr/bin/chromium python tests/ui_state.py`: 11 passing UI
+- `OMOI_TEST_BROWSER=/usr/bin/chromium python tests/ui_state.py`: 13 passing UI
   transition tests, synthetic intercepted requests, Linux Chromium, **not Edge**
 - `python scripts/build_capture.py --check`: shipped bundles match local sources
 - `cargo build --locked --release --bins --example synthetic`
@@ -58,9 +58,7 @@ Windows-only CI now additionally compiles the unsigned installer, exercises
 registration/path repair in an isolated HKCU test namespace, runs install/reinstall/
 uninstall on a disposable runner, verifies the portable extracted executables,
 and retains private unsigned review artifacts for seven days. Hosted results are
-recorded in the PR; source presence alone is not a pass. Native Windows UI, actual
-Edge companion integration, physical hardware behavior and signing are not proved
-by this Linux session.
+recorded in the PR; source presence alone is not a pass. Native Windows UI and installer checks are established separately by the hosted run below. Actual Edge companion integration, physical hardware behavior and signing remain unverified.
 
 ## Measured Linux costs
 
@@ -119,3 +117,25 @@ connections on Windows. The fixture now uses explicit `closing(...)`; this is a
 test-handle correction, not suppression of cleanup errors. Later installer/registry
 steps were skipped in that run and remain pending the corrected run. CI now runs
 independent packaging/registry checks despite an earlier unrelated journey failure.
+
+
+### Completed hosted acceptance
+
+[Run 41607814846](https://github.com/mariyaholic/omoi/actions/runs/41607814846)
+passed both Ubuntu and Windows jobs for implementation head `6699b83` (CI tested
+its merge with main). Windows passed native desktop/themes/reload, all Rust and JS
+checks, actual-binary guided setup/native transport including fixture cleanup,
+isolated HKCU registration/path repair/removal, Inno compilation, real per-user
+install/reinstall/uninstall preservation, portable extraction/system-only PATH,
+scheduler fixtures and 11 Edge UI transition tests. Listener peak: 7,041,024 bytes;
+HTTP→catalogue fixture: 203 ms. These remain scoped synthetic results, not physical
+device or browser-companion permission proof.
+
+[Private unsigned artifact](https://github.com/mariyaholic/omoi/actions/runs/41607814846/artifacts/13217268855)
+contains the installer and portable ZIP; retention ends 2026-11-10. Its source is
+recorded in BUILD.json (the CI merge commit). It is not a signed/public release.
+
+Two subsequent focused UI regressions cover deferred refresh after closing Details
+and first recording before the initial status poll. The UI tracks the revision
+actually rendered, retaining refresh work while a dialog/input owns focus. All 13
+UI tests passed locally in Chromium; the PR's current CI rechecks them on Edge.

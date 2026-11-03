@@ -29,6 +29,7 @@ class UiTransitions(unittest.TestCase):
         self.page = self.browser.new_page()
         self.page.set_default_timeout(3000)
         self.hold, self.pending, self.errors = set(), [], []
+        self.revision = 0
         self.page.on("pageerror", lambda error: self.errors.append(str(error)))
         self.page.route("**/*", self.route)
         self.page.goto("http://omoi.test/#token=" + "a" * 64)
@@ -58,7 +59,7 @@ class UiTransitions(unittest.TestCase):
                                  {"id": "two", "browser": "edge", "name": "Two"}],
                     "excluded": 0, "failures": [], "warnings": []}
         if path == "/api/setup":
-            return {"client":"unknown","transport":"stopped","data":"no_event_yet","pending":0,"client_version":"0.2.0","settings":{"generation":0,"choice":"not_chosen","step":"choose","background":False,"revision":0,"last_seen":None,"last_event":None,"last_processed":None}}
+            return {"client":"unknown","transport":"stopped","data":"no_event_yet","pending":0,"client_version":"0.2.0","settings":{"generation":0,"choice":"not_chosen","step":"choose","background":False,"revision":self.revision,"last_seen":None,"last_event":None,"last_processed":None}}
         if path == "/api/playback":
             return {"pending": 0, "dropped": 0, "port": 43821, "token_file": "fixture"}
         return {"saved": True}
@@ -196,6 +197,21 @@ class UiTransitions(unittest.TestCase):
         with self.page.expect_request("**/api/schedule") as request:
             self.page.locator('#confirmation [data-action="confirm"]').click()
         self.assertEqual(request.value.post_data_json, {"action":"install","profiles":["two"]})
+
+    def test_recording_during_details_refreshes_after_close(self):
+        self.page.locator('[data-item="1"]').click()
+        self.revision = 1
+        self.page.wait_for_timeout(2200)
+        expect(self.page.locator("#detail")).to_be_visible()
+        with self.page.expect_request("**/api/history*", timeout=5000):
+            self.page.get_by_role("button", name="Close details").click()
+        expect(self.page.locator(".history-row")).to_have_count(2)
+
+    def test_first_recording_before_first_status_poll_refreshes(self):
+        self.revision = 1
+        with self.page.expect_request("**/api/history*", timeout=5000):
+            self.page.wait_for_timeout(2200)
+        expect(self.page.locator(".history-row")).to_have_count(2)
 
 
 if __name__ == "__main__":

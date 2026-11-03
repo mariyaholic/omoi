@@ -1,6 +1,6 @@
 # Installation and playback setup roadmap
 
-Status: implementation branch, 2026-11-03. Source and synthetic coverage now exist for IF1–IF7; full Windows/Edge/device acceptance is not implied. See [acceptance and remaining gates](guided-setup-acceptance.md), [setup](SETUP.md) and [transport contract](capture-protocol.md). Original roadmap requirements follow. Entry point:
+Status: implementation branch, 2026-11-03. Source and synthetic coverage now exist for IF1–IF7. Hosted Ubuntu and Windows desktop/installer/registration checks passed; actual Edge-companion and physical-device acceptance remains pending. See [acceptance and remaining gates](guided-setup-acceptance.md), [setup](SETUP.md) and [transport contract](capture-protocol.md). Original roadmap requirements follow. Entry point:
 [CLOUD_HANDOFF.md](../CLOUD_HANDOFF.md). Baseline: merged PR #4, schema 3,
 desktop wrapper and userscript 0.1.1. This document supersedes historical
 foundation work orders for the installation task; it does not redefine catalogue

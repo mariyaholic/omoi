@@ -1,6 +1,6 @@
 # Cloud handoff: guided setup implementation
 
-Updated 2026-11-03 on `feat/guided-setup`. IF1–IF7 source implementation and synthetic validation are in progress; Windows/device release gates remain explicit. See [current acceptance](docs/guided-setup-acceptance.md), [setup instructions](docs/SETUP.md) and [protocol](docs/capture-protocol.md).
+Updated 2026-11-03 on `feat/guided-setup`. IF1–IF7 source implementation is on this branch. Both hosted Ubuntu and Windows acceptance passed on implementation head 6699b83, including installer/registration/portable preservation checks. Two subsequent UI refresh regressions passed locally and are included in current CI. Real Edge companion, device, signing and store gates remain explicit. See [current acceptance](docs/guided-setup-acceptance.md), [setup instructions](docs/SETUP.md) and [protocol](docs/capture-protocol.md).
 
 The original assignment follows for context. Cloud means a development checkout;
 Omoi remains a local application, with no hosted catalogue or cloud ingestion.

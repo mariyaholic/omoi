@@ -6,7 +6,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const themes = [['night','Uika'],['paper','Confluence'],['panel','Panel'],['pc98','Mariyaholic-98'],['oak','Argonaut Oak']];
   const state = {page:'history',query:'',platform:'',channel:'',after:'',mode:'fts',offset:0,info:null,selected:new Set(),profiles:[],seconds:1800,seed:null,collecting:false,theme:'night',density:'comfortable'};
-  let setupRequest=0, setupBusy=false;
+  let setupRequest=0, setupBusy=false, playbackRevision=null;
   let epoch=0, detailEpoch=0, opener=null, currentItem=null, confirmed=null;
   const date = t => t == null ? 'Unknown' : new Date(t*1000).toLocaleString();
   const day = t => t == null ? 'No opening recorded' : new Date(t*1000).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
@@ -27,7 +27,7 @@
   function savePreferences(){try{localStorage.setItem(preferenceKey(),JSON.stringify({theme:state.theme,density:state.density}));}catch{message('Browser storage is unavailable. Appearance will reset when closed.');}}
   async function info(){state.info=await api('info');$('#nav-count').textContent=state.info.items;}
   async function render(){
-    const version=++epoch,page=state.page;
+    const version=++epoch,page=state.page,revision=state.setup?.settings.revision??null;
     $('#page-title').textContent={history:'History',suggestions:'Suggestions',sources:'Sources',settings:'Settings'}[page];
     document.querySelectorAll('nav [data-page]').forEach(b=>b.dataset.page===page?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current'));
     $('#content').setAttribute('aria-busy','true');
@@ -38,7 +38,7 @@
       else if(page==='sources')html=await sourcesView(version);
       else if(page==='suggestions')html=await suggestionsView();
       else {const data=await api('setup');if(version!==epoch)return;state.setup=data.settings?data:null;html=settingsView();}
-      if(version===epoch)$('#content').innerHTML=html;
+      if(version===epoch){$('#content').innerHTML=html;if(['history','suggestions'].includes(page))playbackRevision=revision;}
     } catch(error){if(version===epoch){$('#content').innerHTML='<button class="secondary" data-action="refresh">Retry</button>'+(page==='suggestions'&&state.seed?'<button class="secondary" data-action="clear-seed">Clear topic selection</button>':'');fail(error);}}
     finally{if(version===epoch)$('#content').setAttribute('aria-busy','false');}
   }
@@ -77,7 +77,7 @@
   async function pollCapture(){
     if(document.hidden||setupBusy){setTimeout(pollCapture,2000);return;}
     const version=epoch,request=++setupRequest;
-    try{const p=await api('setup');if(p.settings&&request===setupRequest&&version===epoch){const changed=state.setup&&p.settings.revision!==state.setup.settings.revision;state.setup=p;const target=$('#capture-status');if(target)target.textContent=captureStatus(p);if(changed&&!$('#detail').open&&['history','suggestions'].includes(state.page)){await info();if(version===epoch)await render();}}}catch{if(version===epoch){const target=$('#capture-status');if(target)target.textContent='Capture status unavailable. Reopen Omoi or retry; last contact is not current readiness.';}}
+    try{const p=await api('setup');if(p.settings&&request===setupRequest&&version===epoch){const changed=playbackRevision===null?p.settings.revision>0:p.settings.revision!==playbackRevision;state.setup=p;const target=$('#capture-status');if(target)target.textContent=captureStatus(p);if(changed&&!$('#detail').open&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&['history','suggestions'].includes(state.page)){await info();if(version===epoch)await render();}}}catch{if(version===epoch){const target=$('#capture-status');if(target)target.textContent='Capture status unavailable. Reopen Omoi or retry; last contact is not current readiness.';}}
     setTimeout(pollCapture,2000);
   }
   function original(item){

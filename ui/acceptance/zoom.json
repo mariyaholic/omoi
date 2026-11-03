@@ -1,0 +1,306 @@
+{
+  "result": "pass",
+  "method": "chrome.tabs.setZoom in disposable headless Chromium; actual 200% and 400% browser zoom",
+  "checks": [
+    {
+      "theme": "Uika",
+      "zoom": 2,
+      "screen": "history",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Uika",
+      "zoom": 2,
+      "screen": "suggestions",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Uika",
+      "zoom": 2,
+      "screen": "sources",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Uika",
+      "zoom": 2,
+      "screen": "settings",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Uika",
+      "zoom": 2,
+      "screen": "edit-dialog",
+      "action": "saved"
+    },
+    {
+      "theme": "Uika",
+      "zoom": 4,
+      "screen": "history",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Uika",
+      "zoom": 4,
+      "screen": "suggestions",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Uika",
+      "zoom": 4,
+      "screen": "sources",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Uika",
+      "zoom": 4,
+      "screen": "settings",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Uika",
+      "zoom": 4,
+      "screen": "edit-dialog",
+      "action": "saved"
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 2,
+      "screen": "history",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 2,
+      "screen": "suggestions",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 2,
+      "screen": "sources",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 2,
+      "screen": "settings",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 2,
+      "screen": "edit-dialog",
+      "action": "saved"
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 4,
+      "screen": "history",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 4,
+      "screen": "suggestions",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 4,
+      "screen": "sources",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 4,
+      "screen": "settings",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Confluence",
+      "zoom": 4,
+      "screen": "edit-dialog",
+      "action": "saved"
+    },
+    {
+      "theme": "Panel",
+      "zoom": 2,
+      "screen": "history",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Panel",
+      "zoom": 2,
+      "screen": "suggestions",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Panel",
+      "zoom": 2,
+      "screen": "sources",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Panel",
+      "zoom": 2,
+      "screen": "settings",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Panel",
+      "zoom": 2,
+      "screen": "edit-dialog",
+      "action": "saved"
+    },
+    {
+      "theme": "Panel",
+      "zoom": 4,
+      "screen": "history",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Panel",
+      "zoom": 4,
+      "screen": "suggestions",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Panel",
+      "zoom": 4,
+      "screen": "sources",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Panel",
+      "zoom": 4,
+      "screen": "settings",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Panel",
+      "zoom": 4,
+      "screen": "edit-dialog",
+      "action": "saved"
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 2,
+      "screen": "history",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 2,
+      "screen": "suggestions",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 2,
+      "screen": "sources",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 2,
+      "screen": "settings",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 2,
+      "screen": "edit-dialog",
+      "action": "saved"
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 4,
+      "screen": "history",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 4,
+      "screen": "suggestions",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 4,
+      "screen": "sources",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 4,
+      "screen": "settings",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "zoom": 4,
+      "screen": "edit-dialog",
+      "action": "saved"
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 2,
+      "screen": "history",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 2,
+      "screen": "suggestions",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 2,
+      "screen": "sources",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 2,
+      "screen": "settings",
+      "css_viewport_width": 640
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 2,
+      "screen": "edit-dialog",
+      "action": "saved"
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 4,
+      "screen": "history",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 4,
+      "screen": "suggestions",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 4,
+      "screen": "sources",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 4,
+      "screen": "settings",
+      "css_viewport_width": 320
+    },
+    {
+      "theme": "Argonaut Oak",
+      "zoom": 4,
+      "screen": "edit-dialog",
+      "action": "saved"
+    }
+  ]
+}

@@ -1,0 +1,698 @@
+{
+  "result": "pass",
+  "fixture_items_after_delete": 10000,
+  "binary_sha256": "87f39d4d12cced5273de1d0ff9f7234010c8b2af3d4a73ee3bf544d03ed01f45",
+  "axe_audits": [
+    {
+      "theme": "Uika",
+      "screen": "history",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Uika",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Uika",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Uika",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr"
+      ]
+    },
+    {
+      "theme": "Uika",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Confluence",
+      "screen": "history",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Confluence",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Confluence",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Confluence",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr"
+      ]
+    },
+    {
+      "theme": "Confluence",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Panel",
+      "screen": "history",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Panel",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Panel",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Panel",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr"
+      ]
+    },
+    {
+      "theme": "Panel",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "history",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ]
+    },
+    {
+      "theme": "Mariyaholic-98",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "history",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "suggestions",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "sources",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "settings",
+      "violations": [],
+      "incomplete": [
+        "aria-prohibited-attr"
+      ]
+    },
+    {
+      "theme": "Argonaut Oak",
+      "screen": "edit-dialog",
+      "violations": [],
+      "incomplete": []
+    }
+  ],
+  "browser_resources": {
+    "before_app": {
+      "processes": [
+        {
+          "type": "browser",
+          "working_set_bytes": 169332736,
+          "private_bytes": 59912192
+        },
+        {
+          "type": "renderer",
+          "working_set_bytes": 39313408,
+          "private_bytes": 17940480
+        },
+        {
+          "type": "renderer",
+          "working_set_bytes": 51511296,
+          "private_bytes": 21397504
+        },
+        {
+          "type": "GPU",
+          "working_set_bytes": 94769152,
+          "private_bytes": 58060800
+        },
+        {
+          "type": "network.mojom.NetworkService",
+          "working_set_bytes": 46252032,
+          "private_bytes": 12718080
+        },
+        {
+          "type": "storage.mojom.StorageService",
+          "working_set_bytes": 25858048,
+          "private_bytes": 8663040
+        },
+        {
+          "type": "entity_extraction_service.mojom.Extractor",
+          "working_set_bytes": 24276992,
+          "private_bytes": 8327168
+        },
+        {
+          "type": "winrt_app_id.mojom.WinrtAppIdService",
+          "working_set_bytes": 35094528,
+          "private_bytes": 10584064
+        },
+        {
+          "type": "edge_collections.mojom.CollectionsDataManager",
+          "working_set_bytes": 24092672,
+          "private_bytes": 8249344
+        },
+        {
+          "type": "PooledProcess2",
+          "working_set_bytes": 25219072,
+          "private_bytes": 8130560
+        }
+      ],
+      "reported_processes": 10,
+      "measured_processes": 10,
+      "sum_private_bytes": 213983232,
+      "scope": "isolated headless Edge processes reported by CDP; instantaneous private bytes, not normal browser incremental cost; working sets share pages"
+    },
+    "catalogue_before_audit": {
+      "processes": [
+        {
+          "type": "browser",
+          "working_set_bytes": 174096384,
+          "private_bytes": 62664704
+        },
+        {
+          "type": "renderer",
+          "working_set_bytes": 39321600,
+          "private_bytes": 17940480
+        },
+        {
+          "type": "renderer",
+          "working_set_bytes": 94715904,
+          "private_bytes": 45068288
+        },
+        {
+          "type": "GPU",
+          "working_set_bytes": 142352384,
+          "private_bytes": 104792064
+        },
+        {
+          "type": "network.mojom.NetworkService",
+          "working_set_bytes": 47792128,
+          "private_bytes": 13725696
+        },
+        {
+          "type": "storage.mojom.StorageService",
+          "working_set_bytes": 26279936,
+          "private_bytes": 8773632
+        },
+        {
+          "type": "entity_extraction_service.mojom.Extractor",
+          "working_set_bytes": 24678400,
+          "private_bytes": 8351744
+        },
+        {
+          "type": "winrt_app_id.mojom.WinrtAppIdService",
+          "working_set_bytes": 35094528,
+          "private_bytes": 10584064
+        },
+        {
+          "type": "edge_collections.mojom.CollectionsDataManager",
+          "working_set_bytes": 24084480,
+          "private_bytes": 8241152
+        }
+      ],
+      "reported_processes": 9,
+      "measured_processes": 9,
+      "sum_private_bytes": 280141824,
+      "scope": "isolated headless Edge processes reported by CDP; instantaneous private bytes, not normal browser incremental cost; working sets share pages"
+    },
+    "after_journey": {
+      "processes": [
+        {
+          "type": "browser",
+          "working_set_bytes": 192778240,
+          "private_bytes": 71794688
+        },
+        {
+          "type": "renderer",
+          "working_set_bytes": 41717760,
+          "private_bytes": 20332544
+        },
+        {
+          "type": "renderer",
+          "working_set_bytes": 81416192,
+          "private_bytes": 33370112
+        },
+        {
+          "type": "renderer",
+          "working_set_bytes": 305803264,
+          "private_bytes": 243965952
+        },
+        {
+          "type": "GPU",
+          "working_set_bytes": 177741824,
+          "private_bytes": 138739712
+        },
+        {
+          "type": "network.mojom.NetworkService",
+          "working_set_bytes": 48422912,
+          "private_bytes": 14041088
+        },
+        {
+          "type": "storage.mojom.StorageService",
+          "working_set_bytes": 26525696,
+          "private_bytes": 8810496
+        },
+        {
+          "type": "entity_extraction_service.mojom.Extractor",
+          "working_set_bytes": 24756224,
+          "private_bytes": 8323072
+        },
+        {
+          "type": "edge_collections.mojom.CollectionsDataManager",
+          "working_set_bytes": 24137728,
+          "private_bytes": 8245248
+        },
+        {
+          "type": "chrome.mojom.UtilWin",
+          "working_set_bytes": 28848128,
+          "private_bytes": 8499200
+        }
+      ],
+      "reported_processes": 10,
+      "measured_processes": 10,
+      "sum_private_bytes": 556122112,
+      "scope": "isolated headless Edge processes reported by CDP; instantaneous private bytes, not normal browser incremental cost; working sets share pages"
+    },
+    "axe_loaded": true
+  },
+  "browser_zoom": {
+    "result": "pass",
+    "method": "chrome.tabs.setZoom in disposable headless Chromium; actual 200% and 400% browser zoom",
+    "checks": [
+      {
+        "theme": "Uika",
+        "zoom": 2,
+        "screen": "history",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Uika",
+        "zoom": 2,
+        "screen": "suggestions",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Uika",
+        "zoom": 2,
+        "screen": "sources",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Uika",
+        "zoom": 2,
+        "screen": "settings",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Uika",
+        "zoom": 2,
+        "screen": "edit-dialog",
+        "action": "saved"
+      },
+      {
+        "theme": "Uika",
+        "zoom": 4,
+        "screen": "history",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Uika",
+        "zoom": 4,
+        "screen": "suggestions",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Uika",
+        "zoom": 4,
+        "screen": "sources",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Uika",
+        "zoom": 4,
+        "screen": "settings",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Uika",
+        "zoom": 4,
+        "screen": "edit-dialog",
+        "action": "saved"
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 2,
+        "screen": "history",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 2,
+        "screen": "suggestions",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 2,
+        "screen": "sources",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 2,
+        "screen": "settings",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 2,
+        "screen": "edit-dialog",
+        "action": "saved"
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 4,
+        "screen": "history",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 4,
+        "screen": "suggestions",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 4,
+        "screen": "sources",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 4,
+        "screen": "settings",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Confluence",
+        "zoom": 4,
+        "screen": "edit-dialog",
+        "action": "saved"
+      },
+      {
+        "theme": "Panel",
+        "zoom": 2,
+        "screen": "history",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Panel",
+        "zoom": 2,
+        "screen": "suggestions",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Panel",
+        "zoom": 2,
+        "screen": "sources",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Panel",
+        "zoom": 2,
+        "screen": "settings",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Panel",
+        "zoom": 2,
+        "screen": "edit-dialog",
+        "action": "saved"
+      },
+      {
+        "theme": "Panel",
+        "zoom": 4,
+        "screen": "history",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Panel",
+        "zoom": 4,
+        "screen": "suggestions",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Panel",
+        "zoom": 4,
+        "screen": "sources",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Panel",
+        "zoom": 4,
+        "screen": "settings",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Panel",
+        "zoom": 4,
+        "screen": "edit-dialog",
+        "action": "saved"
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 2,
+        "screen": "history",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 2,
+        "screen": "suggestions",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 2,
+        "screen": "sources",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 2,
+        "screen": "settings",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 2,
+        "screen": "edit-dialog",
+        "action": "saved"
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 4,
+        "screen": "history",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 4,
+        "screen": "suggestions",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 4,
+        "screen": "sources",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 4,
+        "screen": "settings",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Mariyaholic-98",
+        "zoom": 4,
+        "screen": "edit-dialog",
+        "action": "saved"
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 2,
+        "screen": "history",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 2,
+        "screen": "suggestions",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 2,
+        "screen": "sources",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 2,
+        "screen": "settings",
+        "css_viewport_width": 640
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 2,
+        "screen": "edit-dialog",
+        "action": "saved"
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 4,
+        "screen": "history",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 4,
+        "screen": "suggestions",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 4,
+        "screen": "sources",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 4,
+        "screen": "settings",
+        "css_viewport_width": 320
+      },
+      {
+        "theme": "Argonaut Oak",
+        "zoom": 4,
+        "screen": "edit-dialog",
+        "action": "saved"
+      }
+    ]
+  },
+  "widths": [
+    1440,
+    375,
+    320
+  ],
+  "themes": [
+    "Uika",
+    "Confluence",
+    "Panel",
+    "Mariyaholic-98",
+    "Argonaut Oak"
+  ],
+  "api_ms_median": 80.39694995386526,
+  "api_ms_max": 106.53839993756264,
+  "warm_history_click_to_rows_ms_median": 121.32219999330118,
+  "warm_history_click_to_rows_ms_max": 138.25839990749955,
+  "resources": {
+    "server_working_set_bytes": 9834496,
+    "server_peak_working_set_bytes": 11599872,
+    "server_idle_cpu_ms_over_3s": 46.875,
+    "browser_memory": "see browser_resources"
+  },
+  "javascript_errors": [],
+  "external_requests": [],
+  "checks": [
+    "metadata and tag editing",
+    "dialog keyboard containment and focus restoration",
+    "scheduler confirmation cancellation",
+    "playback inbox processing",
+    "JSON download",
+    "empty catalogue",
+    "selected-profile collection excludes unchecked profile",
+    "10k item pagination",
+    "FTS/literal search",
+    "HTML escaping",
+    "delete cancel/confirm/FTS cascade",
+    "all screens and details in five themes",
+    "appearance persistence",
+    "token removed from URL",
+    "unauthenticated and foreign Host/Origin rejection",
+    "duplicate/oversized/chunked request rejection",
+    "port collision",
+    "idle shutdown"
+  ]
+}

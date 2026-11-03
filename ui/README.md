@@ -34,6 +34,6 @@ cargo test --locked --test ui
 python scripts/verify_ui.py --binary path/to/omoi.exe --out path/to/evidence
 ```
 
-The Python journey isolates all browser roots and creates synthetic browser databases. It exercises authenticated HTTP, selected-profile collection, a 10,000-item catalogue, search, pagination, safe rendering, confirmed deletion, five themes at 1440/375/320, appearance persistence, port collision and idle shutdown. It records warm UI timings, API latency and Windows server working set/idle CPU. Browser memory is not measured by this script.
+The Python journey isolates all browser roots and creates synthetic browser databases. It exercises authenticated HTTP, selected-profile collection, a 10,000-item catalogue, search, pagination, safe rendering, confirmed deletion, five themes at 1440/375/320, appearance persistence, port collision and idle shutdown. It records warm UI timings, API latency, Windows server working set/idle CPU and separate browser process private-memory snapshots. `--axe-file PATH` adds automated accessibility audits; `--zoom` adds real 200/400% browser zoom through bundled headless Chromium.
 
-Current measured results and limitations: [MEASUREMENTS.md](MEASUREMENTS.md).
+Current measured results and limitations: [headless acceptance](../docs/headless-acceptance-20261103.md). Earlier measurements: [MEASUREMENTS.md](MEASUREMENTS.md).

@@ -1,0 +1,17 @@
+{
+  "result": "pass",
+  "manager_version": "5.5.1",
+  "browser": "151.0.7922.34",
+  "accepted_events": 5,
+  "session_played_seconds": 10,
+  "pairing_prompts": 2,
+  "checks": [
+    "unmodified shipped script installed through manager UI",
+    "pairing through real menu and protected GM storage",
+    "real HTML video events",
+    "real GM_xmlhttpRequest accepted by strict listener",
+    "token absent from page HTML",
+    "transactional session processing"
+  ],
+  "scope": "disposable headless Chromium; unpacked official manager package; synthetic document at matched YouTube URL; external network blocked by dead proxy; no normal browser profile or authenticated platform used"
+}

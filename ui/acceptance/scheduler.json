@@ -1,0 +1,24 @@
+{
+  "result": "pass",
+  "task": "OmoiVerify-7625471ea3334cb8b92a4001a35d2f44",
+  "registered_settings": {
+    "DisallowStartIfOnBatteries": "true",
+    "StopIfGoingOnBatteries": "true",
+    "WakeToRun": "false",
+    "MultipleInstancesPolicy": "IgnoreNew",
+    "Hidden": "true"
+  },
+  "checks": [
+    "isolated install",
+    "registered hourly/logon triggers and battery/overlap/wake settings",
+    "real helper launch",
+    "zero personal rows",
+    "last result zero",
+    "remove and absence"
+  ],
+  "not_tested": [
+    "actual logon transition",
+    "actual AC-to-battery transition",
+    "visual observation of hidden launch"
+  ]
+}

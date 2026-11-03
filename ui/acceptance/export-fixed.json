@@ -1,0 +1,63 @@
+{
+  "result": "pass",
+  "binary_sha256": "87f39d4d12cced5273de1d0ff9f7234010c8b2af3d4a73ee3bf544d03ed01f45",
+  "runs": [
+    {
+      "format": "csv",
+      "run": 1,
+      "rows": 100201,
+      "wall_ms": 548.4326001023874,
+      "cpu_ms": 296.875,
+      "peak_working_set_bytes": 10584064,
+      "export_bytes": 10162401
+    },
+    {
+      "format": "csv",
+      "run": 2,
+      "rows": 100201,
+      "wall_ms": 284.82859989162534,
+      "cpu_ms": 265.625,
+      "peak_working_set_bytes": 10575872,
+      "export_bytes": 10162401
+    },
+    {
+      "format": "csv",
+      "run": 3,
+      "rows": 100201,
+      "wall_ms": 372.21599998883903,
+      "cpu_ms": 296.875,
+      "peak_working_set_bytes": 10575872,
+      "export_bytes": 10162401
+    },
+    {
+      "format": "json",
+      "run": 1,
+      "rows": 100201,
+      "wall_ms": 431.49519991129637,
+      "cpu_ms": 359.375,
+      "peak_working_set_bytes": 10653696,
+      "export_bytes": 24791647
+    },
+    {
+      "format": "json",
+      "run": 2,
+      "rows": 100201,
+      "wall_ms": 430.01999997068197,
+      "cpu_ms": 375.0,
+      "peak_working_set_bytes": 10641408,
+      "export_bytes": 24791647
+    },
+    {
+      "format": "json",
+      "run": 3,
+      "rows": 100201,
+      "wall_ms": 550.86019996088,
+      "cpu_ms": 500.0,
+      "peak_working_set_bytes": 10633216,
+      "export_bytes": 24791647
+    }
+  ],
+  "scope": "existing generated 100k-view fixture; Windows lifetime process counters; three runs per format; not a p95 estimate; parser and browser memory excluded",
+  "catalogue_main_file_unchanged": true,
+  "temporary_exports_deleted": true
+}

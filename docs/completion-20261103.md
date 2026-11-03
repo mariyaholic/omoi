@@ -1,5 +1,7 @@
 # Catalogue controls and playback
 
+Historical implementation record. [Headless acceptance](headless-acceptance-20261103.md) supersedes the remaining-gate list and measurements below.
+
 This revision adds in-app export, scheduler controls, metadata/tag editing and optional playback capture. All five themes remain: Uika, Confluence, Panel, Mariyaholic-98 and Argonaut Oak.
 
 ## Use
@@ -26,4 +28,4 @@ Tests cover version-1 migration, metadata/FTS atomicity, manual precedence, paus
 
 Browser checks cover five themes and four screens at 1440/375/320 widths, editing/export, confirmation cancellation and keyboard containment/focus restoration. Focus indicators, reduced motion and forced-colour treatment are included. This is not full screen-reader/WCAG conformance proof; actual browser zoom and default-browser launch need manual review.
 
-The generic HTML-video adapter still needs acceptance against authenticated live players and an installed userscript manager. Native SMTC, remote metadata APIs, RSS/TMDB recommendations and M2 imports remain separate roadmap work. No cookies or paid services are used. Personal retained-week acceptance needs actual elapsed use; generated data cannot replace it. Independent review remains open. The entire M0–M5 roadmap is not declared complete.
+The generic HTML-video adapter still needs acceptance against authenticated live players. The later headless record covers an installed manager with a synthetic HTML video and the owner's existing retained-week history. Native SMTC, remote metadata APIs, RSS/TMDB recommendations and M2 imports remain separate roadmap work. No cookies or paid services are used. Independent review remains open. The entire M0–M5 roadmap is not declared complete.

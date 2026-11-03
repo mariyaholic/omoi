@@ -1,5 +1,7 @@
 # M0 acceptance record — 2026-11-03
 
+Historical CLI measurements and strict-contract map. [Headless acceptance on the owner's PC](headless-acceptance-20261103.md) is the current acceptance record and supersedes the earlier untested retained-week, installed-scheduler and UI/manager statements below.
+
 Follow-through update: [current UI/playback notes](completion-20261103.md) and [new measurements](../ui/MEASUREMENTS.md) supersede earlier unavailable-feature statements. The isolated Windows install/run/remove smoke now passes and exposed/fixed a COM XML encoding defect; real logon/battery and retained-week acceptance remain open. An injected view-write failure now verifies item/view/checkpoint rollback and a successful retry. Earlier CLI resource measurements below remain tied to their original binary.
 
 Decision: **usable CLI baseline; full M0 acceptance remains open**. This is a measured implementation record, not a release certificate. All history used for automated checks and resource runs is generated locally. No personal history or cookies were read, and no scheduled task was installed.
@@ -50,16 +52,16 @@ The separate 1,024-byte-title stress workload (one full import, three warm/chang
 
 | Area | Evidence available | Remaining strict acceptance gaps |
 |---|---|---|
-| U1–U3 types/config/database | Cursor/config tests, migration rollback/idempotence, FTS insert/update/delete, foreign keys, future-schema rejection, read-only no-create/no-write, WAL mode | Additional injected connection contention coverage |
+| U1–U3 types/config/database | Cursor/config tests, migration rollback/idempotence, FTS insert/update/delete, foreign keys, future-schema rejection, read-only no-create/no-write, WAL mode; November headless pass adds busy exit code 4 and successful retry with rollback | Independent review of complete named contract coverage |
 | U4 discovery | Multi-profile Chromium, Firefox INI, explicit paths, exclusions, bounded INI reads | Denied-access test covers missing file, not injected permission error; symlink/strict malformed INI variants |
 | U5 snapshot | Deterministic three-attempt race, sidecar copy and cleanup, WAL-only fingerprint; pipeline observes committed Firefox WAL | Not every named contract case has an independent test or fault injection |
-| U6/U7 readers | Epochs, negative Firefox times, tied tuple pagination, optional durations, 512-row bounds, reset after source replacement, oversized/NULL rows | Explicit missing-table error classification and orphan-join accounting; underlying reader errors currently classified by collector |
-| U8 normalization | Contract table vectors, UTF-8/percent local identities, filename case, encoded separator and UNC rejection | Separate midnight and duplicate-parameter named tests still to expand |
-| U9 dedupe | Fixed anchor, source/title richness, max duration, transaction/FTS rollback, concurrent collectors | Deterministic stale-prepared-checkpoint race and full boundary/tie vector table |
-| U10 export | CSV quote/newline round-trip, JSON null/order, multiple views per item, no-clobber, broken-pipe regression | Dedicated 100k-row export memory measurement |
-| U11 logs | Global cap/redaction and stale-lock tests; dry-run avoids persistent collection logs | Per-source structured diagnostic counts and explicit logging-failure sink assertions |
-| U12 scheduler | XML options/escaping/argv quoting, Linux unsupported stub, Windows COM read-only absence query | Actual install/launch/remove and hidden-window/battery/logon smoke; native adapter difference below |
-| U13 orchestration | End-to-end collect/rerun, new rows, partial corruption, dry run, concurrent writers, session capture stub | Owner retained-week import; injected write/commit failure with cursor rollback; per-source rejected counts (current report is aggregate) |
+| U6/U7 readers | Epochs, negative Firefox times, tied tuple pagination, optional durations, 512-row bounds, reset after source replacement, oversized/NULL rows; missing-table partial failure leaves that source's cursor unchanged | Orphan-join accounting; underlying reader errors currently classified by collector |
+| U8 normalization | Contract table vectors, UTF-8/percent local identities, filename case, encoded separator and UNC rejection; midnight and duplicate identity-parameter regressions | Independent review of complete named contract coverage |
+| U9 dedupe | Fixed anchor, source/title richness, max duration, transaction/FTS rollback, concurrent collectors; inclusive ±1800-second and deterministic tie vectors | Deterministic stale-prepared-checkpoint race |
+| U10 export | CSV quote/newline round-trip, JSON null/order, multiple views per item, no-clobber, broken-pipe regression; 100,201-row export measurement and JSON write batching in the current headless record | Independent review of complete named contract coverage |
+| U11 logs | Global cap/redaction and stale-lock tests; dry-run avoids persistent collection logs; logging failure preserves an existing lock | Per-source structured diagnostic counts |
+| U12 scheduler | XML options/escaping/argv quoting, Linux unsupported stub; actual uniquely named Windows task install/run/remove with zero last result and absence verified | Actual hidden-window observation, battery/logon transition; native adapter difference below |
+| U13 orchestration | End-to-end collect/rerun, new rows, partial corruption, dry run, concurrent writers; retained-week snapshot import/rerun and integrity; write contention rollback/retry | Manual known-video comparison; distinct commit-failure injection; per-source rejected counts (current report is aggregate) |
 | U14 resources | Determinism/spacing/counts/isolated-path release journey on Windows and Linux; Windows lifetime OS counters, 20-run distributions and separate long-title stress | Linux resource counters; exhaustive named generator suite beyond the release journey; controlled cold cache and exact transient disk peak |
 
 The table maps behavior, not a claim that all mandatory test names in the original contract exist. Some combined integration tests cover multiple assertions. The outstanding rows remain work; they are not waived by green CI.

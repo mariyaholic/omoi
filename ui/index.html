@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light"><title>Omoi</title>
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="inspiration.css"><link rel="stylesheet" href="app.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#history" aria-label="Omoi home"><svg viewBox="0 0 32 38" aria-hidden="true"><path d="M7 4h18v30l-9-6-9 6z"/><path d="M12 11h8M12 16h8"/></svg><span>omoi</span></a>
+      <nav aria-label="Main navigation">
+        <button data-page="history" aria-current="page">History<span id="nav-count" class="nav-count"></span></button>
+        <button data-page="suggestions">Suggestions</button>
+        <button data-page="sources">Sources</button>
+        <button data-page="settings">Settings</button>
+      </nav>
+      <div class="sidebar-bottom"><div class="collection-status" id="connection-state">Connecting…</div><button class="refresh-button" data-action="refresh">Refresh catalogue</button></div>
+    </aside>
+    <main id="main" tabindex="-1">
+      <header class="page-heading"><h1 id="page-title">History</h1><button class="secondary" data-action="refresh">Refresh</button></header>
+      <div id="message" role="status" aria-live="polite"></div>
+      <div id="content" aria-busy="true"></div>
+    </main>
+  </div>
+  <dialog id="detail" class="detail-sheet" aria-labelledby="detail-title"></dialog>
+  <dialog id="confirmation" class="confirmation" aria-labelledby="confirm-title"></dialog>
+</body>
+</html>

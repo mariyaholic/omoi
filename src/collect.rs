@@ -58,8 +58,19 @@ pub fn collect(
     env: &PathEnvironment,
     dry_run: bool,
 ) -> Result<CollectReport> {
-    match collect_once(config, paths, env, dry_run) {
-        Err(Error::Busy) => collect_once(config, paths, env, dry_run),
+    collect_selected(config, paths, env, dry_run, None)
+}
+
+/// UI collection may narrow discovery to explicit source identities. It never broadens config scope.
+pub fn collect_selected(
+    config: &Config,
+    paths: &Paths,
+    env: &PathEnvironment,
+    dry_run: bool,
+    selected: Option<&[String]>,
+) -> Result<CollectReport> {
+    match collect_once(config, paths, env, dry_run, selected) {
+        Err(Error::Busy) => collect_once(config, paths, env, dry_run, selected),
         result => result,
     }
 }
@@ -68,6 +79,7 @@ fn collect_once(
     paths: &Paths,
     env: &PathEnvironment,
     dry_run: bool,
+    selected: Option<&[String]>,
 ) -> Result<CollectReport> {
     let start = Instant::now();
     let temp = std::env::temp_dir();
@@ -85,7 +97,21 @@ fn collect_once(
     }
     let mut conn = crate::db::open(&dbpath, config, true)?;
     crate::db::migrate(&mut conn)?;
-    let discovery = discover(config, env)?;
+    let mut discovery = discover(config, env)?;
+    if let Some(selected) = selected {
+        if selected.is_empty()
+            || selected
+                .iter()
+                .any(|id| !discovery.profiles.iter().any(|p| &p.source.0 == id))
+        {
+            return Err(Error::Config(
+                "selected profiles are unavailable; refresh Sources".into(),
+            ));
+        }
+        discovery
+            .profiles
+            .retain(|p| selected.contains(&p.source.0));
+    }
     let mut report = CollectReport {
         dry_run,
         profiles_found: discovery.profiles.len() + discovery.failures.len(),

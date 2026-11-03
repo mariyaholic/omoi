@@ -7,7 +7,7 @@ Open `index.html` in Edge, Chrome or another modern browser. There is no build s
 - **History:** search titles/creators/topics (or press `/`), filter platform and date, select an opening for its detail sheet, save, remove, cancel and undo.
 - **Suggestions:** rediscover older entries, select a time budget, change the seed for shared topics. Continue Watching stays empty because the sample contains no measured playback.
 - **Sources:** select example profiles and preview enabling/disabling automatic collection. These controls never access browsers or Windows Task Scheduler.
-- **Settings:** compare all five source-labelled themes: Uika (Night), Mariyaholic Confluence (Paper), Mariyaholic Panel, Mariyaholic-98 (PC-98) and Argonaut Oak. Adjust list spacing, export the fictional library as JSON, or reset the preview.
+- **Settings:** compare all five themes: Uika, Confluence, Panel, Mariyaholic-98 and Argonaut Oak. Adjust list spacing, export the fictional library as JSON, or reset the preview.
 - Use **Preview state** in the top bar to inspect populated, empty and partial-collection states. Refresh only simulates a collection.
 
 All 18 openings are sample data. Preferences and edits live only in memory and reset on reload. The existing Rust CLI, database and scheduler are not connected. Metadata shown here demonstrates future interface behavior, not automatic enrichment already available in the CLI.

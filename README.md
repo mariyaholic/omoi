@@ -3,7 +3,19 @@
 Local, low-overhead watch history for the PC: reads browser history (Chrome, Edge, Brave,
 Firefox) into one SQLite file, with optional hourly collection and explainable local suggestions.
 
-Status: a working command-line baseline collects video visits into SQLite and exports CSV/JSON. Windows scheduling and local recommendation queries are implemented. A graphical UI and measured playback capture remain future work. See `docs/m0-acceptance.md` for evidence and remaining acceptance gates.
+Status: the CLI and local browser UI use the same SQLite catalogue. History, search, filters, details, confirmed deletion, selected-profile collection and local suggestions are implemented. All five visual themes are available. Playback capture and metadata enrichment remain future work. See `docs/m0-acceptance.md` for the existing acceptance gaps and [UI instructions](ui/README.md) for the connected interface.
+
+## Open the app
+
+```text
+omoi ui --open
+```
+
+In the portable Windows ZIP, extract all files and double-click **Run Omoi.cmd**. Keep its console open while using the app. Starting the UI opens the existing catalogue, or creates an empty one. To import, choose **Sources**, select profiles and confirm **Collect selected**. No collection or scheduled task is started automatically.
+
+The browser connects only to `127.0.0.1:43822`; the server exits after ten idle minutes. If the port is occupied, close the other Omoi console or use `omoi ui --port 0 --open`. The launch URL contains a private session token that is removed from the address bar. If you reload the tab, reopen the URL printed in the console. Use the app's Refresh button to reload catalogue data without losing the session.
+
+Settings includes **Uika**, **Confluence**, **Panel**, **Mariyaholic-98**, and **Argonaut Oak**. Appearance persists in the browser. Export and Windows scheduling remain terminal commands; they are shown in the interface.
 
 ## Use the command-line baseline
 
@@ -56,7 +68,7 @@ Status currently returns the task XML or an explicit not-installed message, not 
 
 A clickable [visual prototype](prototype/index.html) demonstrates History, Suggestions, Sources and Settings with fictional data. Open its `index.html` directly in a browser; see [prototype instructions](prototype/README.md). It is separate from the working CLI and does not collect history or install tasks.
 
-There is no graphical UI or playback-time listener yet. Snapshotting live SQLite files is best-effort. Fixture-based CLI journeys and hosted Windows/Linux verification support trying the baseline; they do not establish acceptance on personal browser profiles. Real retained-week import, installed scheduler smoke, independent review and remaining strict contract cases stay open. Resources are measured on synthetic data; see `docs/m0-acceptance.md`. UI direction is in `docs/ui-recommendations.md`.
+The connected UI is embedded in `omoi.exe`; opening `prototype/index.html` still opens the separate fictional-data study. Playback capture and metadata/tag editing are not provided by the UI. Snapshotting live SQLite files is best-effort. Fixture-based journeys do not establish acceptance on personal browser profiles. Real retained-week import, installed scheduler smoke, independent review and remaining strict contract cases stay open. Resources are measured on synthetic data; see `docs/m0-acceptance.md` and `ui/README.md`.
 
 - Design: `docs/watch-history-architecture.md` (§0 holds Maria's decisions)
 - Review: `docs/omoi-design-review.md`

@@ -104,3 +104,18 @@ passed on Linux. `scripts/measure.py` remains the Windows collector measurement 
 - Legacy manager queues retain the pre-existing cross-tab storage limitation; use
   the dedicated companion for a single durable queue owner. New background mode is
   native companion only; no always-on system service or implicit app autostart.
+
+
+### First hosted Windows run
+
+[Run 41606286748](https://github.com/mariyaholic/omoi/actions/runs/41606286748)
+on `a22364c` passed Rust format/lint/tests, release build, smoke, the hidden native
+WebView2 window (five themes and appearance reload), legacy playback and JS tests.
+The listener's existing two-event fixture reported 7,069,696 bytes peak working set,
+passing its unchanged 10 MB gate; the three-second idle sample was below an OS tick.
+The new setup/native journey passed its assertions (203 ms HTTP→catalogue), then
+failed fixture cleanup because Python SQLite context managers do not close their
+connections on Windows. The fixture now uses explicit `closing(...)`; this is a
+test-handle correction, not suppression of cleanup errors. Later installer/registry
+steps were skipped in that run and remain pending the corrected run. CI now runs
+independent packaging/registry checks despite an earlier unrelated journey failure.

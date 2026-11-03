@@ -1,5 +1,6 @@
 """Actual-binary synthetic setup/HTTP/native journey; no real browser data. Stdlib only."""
 import argparse
+from contextlib import closing
 import json
 import os
 from pathlib import Path
@@ -85,7 +86,7 @@ def main():
             ready=frame(h,hello);assert ready['ok']
             envelope=dict(type='event',binding=ready['binding'],generation=ready['generation'],event=event(3,'native'))
             # Writer contention cannot acknowledge an event that was not enqueued.
-            with sqlite3.connect(home/'history.sqlite') as locked:
+            with closing(sqlite3.connect(home/'history.sqlite')) as locked:
                 locked.execute('BEGIN IMMEDIATE')
                 busy=frame(h,envelope)
                 assert not busy['ok'] and busy['retry']
@@ -108,7 +109,7 @@ def main():
             # Wrong origin and truncated input cannot enqueue.
             bad=subprocess.run([str(hostdir/native.name),'chrome-extension://'+'b'*32+'/'],input=b'',capture_output=True,env=env,timeout=5);assert bad.returncode!=0
             truncated=host();truncated.stdin.write(b'\x10\0');truncated.stdin.close();truncated.wait(timeout=5);assert not truncated.stdout.read()
-            with sqlite3.connect(home/'history.sqlite') as c:
+            with closing(sqlite3.connect(home/'history.sqlite')) as c:
                 assert c.execute('pragma user_version').fetchone()[0]==3
                 assert c.execute('select count(*) from raw_events').fetchone()[0]==0
             print(json.dumps({'result':'pass','environment':os.name,'http_event_to_catalogue_ms':round(latency,2),'checks':['history-only','resumable consent','hello distinct from recording','origin rejection','automatic materialization','dedupe','stop/re-enable generation','native framing/origin/binding/version/permission','foreground lifetime','explicit background','EOF/truncated input','schema 3 retained'],'limitations':['No Edge permission UI, WebView2, physical sleep or installer execution proved by this script.']},indent=2))

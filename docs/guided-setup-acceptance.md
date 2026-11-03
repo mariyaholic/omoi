@@ -33,7 +33,7 @@ Implementation validation:
 - `cargo fmt --check`
 - `cargo clippy --locked --all-targets -- -D warnings`
 - `cargo test --locked --all-targets`: 94 passing Rust tests
-- `node --test tests/userscript.test.cjs tests/extension.test.cjs`: 14 passing tests
+- `node --test tests/userscript.test.cjs tests/extension.test.cjs`: 16 passing tests
 - `python tests/desktop_state.py`: two passing cleanup tests
 - `OMOI_TEST_BROWSER=/usr/bin/chromium python tests/ui_state.py`: 11 passing UI
   transition tests, synthetic intercepted requests, Linux Chromium, **not Edge**
@@ -51,7 +51,7 @@ Implementation validation:
 
 The existing state/migration/accounting tests remain enabled. New tests include
 startup inbox drain, partial-client shutdown/port release, credential-preserving
-collision, worker concurrency/restart, stale setup generation and explicit epoch
+collision, worker concurrency/restart, rejection of new foreground samples while the app is absent, stale setup generation and explicit epoch
 queue discard. Fake worker/platform tests are labeled; they are not browser proof.
 
 Windows-only CI now additionally compiles the unsigned installer, exercises

@@ -7,13 +7,14 @@ test('consent epochs cannot replay old capture or cross catalogues',()=>{const s
 test('queue is bounded and rejects overflow without deleting an unacknowledged event',()=>{const s=state();for(let i=0;i<1024;i++)assert.equal(Q.append(s,e(i)),true);assert.equal(Q.append(s,e(1024)),false);assert.equal(s.queue[0].event.event_id,'producer:0');});
 test('manifest packages scripts without page messaging or general script loading',()=>{const m=JSON.parse(fs.readFileSync('extension/manifest.json'));assert.equal(m.manifest_version,3);assert.ok(!m.permissions.includes('userScripts'));assert.ok(!m.host_permissions);assert.equal(m.optional_host_permissions.length,7);assert.ok(!m.externally_connectable);assert.equal(fs.readFileSync('extension/core.js','utf8'),fs.readFileSync('capture/core.js','utf8'));});
 function workerFixture(storage={}){
- const listeners={},timers=new Map();let timer=0,permission=true,online=true,generation=1,commits=new Set(),wire=[];
+ const listeners={},timers=new Map();let timer=0,permission=true,online=true,eventsFail=false,generation=1,commits=new Set(),wire=[];
  const chrome={storage:{local:{setAccessLevel:async()=>{},get:async()=>structuredClone(storage),set:async value=>{await Promise.resolve();Object.assign(storage,structuredClone(value));}}},permissions:{contains:async()=>permission},alarms:{create:async()=>{},onAlarm:{addListener:fn=>listeners.alarm=fn}},runtime:{id:'a'.repeat(32),getURL:p=>`chrome-extension://${'a'.repeat(32)}/${p}`,getManifest:()=>({optional_host_permissions:['https://www.youtube.com/*']}),onMessage:{addListener:fn=>listeners.message=fn},connectNative:()=>{
   const callbacks={};return {onMessage:{addListener:fn=>callbacks.message=fn},onDisconnect:{addListener:fn=>callbacks.disconnect=fn},disconnect:()=>callbacks.disconnect?.(),postMessage:m=>{
     wire.push(structuredClone(m));queueMicrotask(()=>{
      if(!online){callbacks.disconnect();return;}
      if(m.type==='hello'){callbacks.message(m.permission?{ok:true,binding:'fixture-home',generation}:{ok:false,error:'Permission needed'});return;}
-     if(m.type==='event'){if(m.generation!==generation){callbacks.message({ok:false,error:'Reconnect'});return;}commits.add(m.event.event_id);callbacks.message({ok:true});}
+     if(m.type==='status'){callbacks.message({ok:true,binding:'fixture-home',generation});return;}
+     if(m.type==='event'){if(eventsFail){callbacks.disconnect();return;}if(m.generation!==generation){callbacks.message({ok:false,error:'Reconnect'});return;}commits.add(m.event.event_id);callbacks.message({ok:true});}
     });
   }};
  }}};
@@ -21,11 +22,11 @@ function workerFixture(storage={}){
  const popup={id:chrome.runtime.id,url:chrome.runtime.getURL('popup.html')};
  const sender={id:chrome.runtime.id,url:'https://www.youtube.com/watch?v=abcdefghijk',frameId:0};
  const send=(message,from=sender)=>new Promise(resolve=>listeners.message(message,from,resolve));
- return {send,storage,commits,wire,popup,online:x=>online=x,permission:x=>permission=x,generation:x=>generation=x};
+ return {send,storage,commits,wire,popup,online:x=>online=x,eventsFail:x=>eventsFail=x,permission:x=>permission=x,generation:x=>generation=x};
 }
 test('actual worker serializes concurrent tabs and restores durable queue after suspension',async()=>{
  const storage={},f=workerFixture(storage);const ready=await f.send({type:'connect'},f.popup);assert.equal(ready.enabled,true);
- f.online(false);
+ f.eventsFail(true);
  const event=i=>({event_id:`tab:${i}`,url:'https://www.youtube.com/watch?v=abcdefghijk'});
  const replies=await Promise.all([1,2,3,4].map(i=>f.send({type:'event',epoch:ready.epoch,event:event(i)})));
  assert.ok(replies.every(x=>x.accepted));assert.equal(storage.capture.queue.length,4);
@@ -36,8 +37,20 @@ test('actual worker refuses permission denial and content commands from untruste
  const bad=await f.send({type:'connect'},{id:'foreign',url:'https://www.youtube.com/',frameId:0});assert.match(bad.error,/forbidden/);
 });
 test('actual worker consent reset discards old epoch explicitly and rejects stale producers',async()=>{
- const f=workerFixture(),ready=await f.send({type:'connect'},f.popup);f.online(false);
+ const f=workerFixture(),ready=await f.send({type:'connect'},f.popup);f.eventsFail(true);
  await f.send({type:'event',epoch:ready.epoch,event:{event_id:'old:0',url:'https://www.youtube.com/watch?v=abcdefghijk'}});
- f.generation(2);f.online(true);const resumed=await f.send({type:'connect'},f.popup);assert.notEqual(resumed.epoch,ready.epoch);assert.equal(resumed.dropped,1);
+ f.generation(2);f.eventsFail(false);const resumed=await f.send({type:'connect'},f.popup);assert.notEqual(resumed.epoch,ready.epoch);assert.equal(resumed.dropped,1);
  assert.equal((await f.send({type:'event',epoch:ready.epoch,event:{event_id:'old:1',url:'https://www.youtube.com/watch?v=abcdefghijk'}})).accepted,false);
+});
+
+test('new foreground samples are not queued while the app is unavailable',async()=>{
+ const f=workerFixture(),ready=await f.send({type:'connect'},f.popup);f.online(false);
+ const reply=await f.send({type:'event',epoch:ready.epoch,event:{event_id:'offline:0',url:'https://www.youtube.com/watch?v=abcdefghijk'}});
+ assert.equal(reply.enabled,false);assert.equal(reply.accepted,false);assert.equal(f.storage.capture.queue.length,0);
+});
+
+test('consent changing during a native reconnect cannot relabel a stale sample',async()=>{
+ const f=workerFixture(),ready=await f.send({type:'connect'},f.popup);f.generation(2);
+ const reply=await f.send({type:'event',epoch:ready.epoch,event:{event_id:'stale:0',url:'https://www.youtube.com/watch?v=abcdefghijk'}});
+ assert.equal(reply.accepted,false);assert.equal(f.storage.capture.queue.length,0);
 });

@@ -52,6 +52,14 @@ async function handle(message,sender){
   // unavailable. It can never move to a different home implicitly.
   if(message.type==='event'){
     if(!s.enabled||!s.binding||message.epoch!==`${s.binding}:${s.generation}`)return {accepted:false,enabled:false,error:'Reconnect capture'};
+    // Check current native consent/lifetime before accepting NEW samples. Older
+    // durable entries still retry after a temporary disconnect; time observed
+    // while a foreground-only app is absent must never enter that queue.
+    try {
+      if(!await negotiate(s))return {accepted:false,enabled:false,error:lastError};
+      const status=await exchange({type:'status'});
+      if(!status.ok||status.binding!==s.binding||status.generation!==s.generation||message.epoch!==`${s.binding}:${s.generation}`){helloAt=0;return {accepted:false,enabled:false,error:status.error||'Capture epoch changed'};}
+    } catch(e) {helloAt=0;return {accepted:false,enabled:false,error:e.message};}
     const e=message.event;
     if(!e||new URL(e.url).origin!==new URL(sender.url).origin||typeof e.event_id!=='string'||JSON.stringify(e).length>16384)throw new Error('Invalid event');
     if(!OmoiQueue.append(s,{binding:s.binding,generation:s.generation,event:e}))return {accepted:false,enabled:true,error:'Local queue full; retry later'};
@@ -63,6 +71,7 @@ async function handle(message,sender){
   return {accepted:message.type==='event',enabled:connected&&s.enabled,epoch:`${s.binding}:${s.generation}`,pending:s.queue.length,dropped:s.dropped,error:lastError};
 }
 chrome.runtime.onMessage.addListener((message,sender,respond)=>{
+  if(!message||JSON.stringify(message).length>20000){respond({accepted:false,error:'Message too large'});return;}
   if(pending>=128){respond({accepted:false,error:'Busy; retry'});return;}
   pending++;
   chain=chain.catch(()=>{}).then(()=>handle(message,sender)).then(respond,e=>{lastError=e.message;respond({accepted:false,enabled:false,error:lastError});chrome.alarms.create('retry',{delayInMinutes:1});}).finally(()=>pending--);

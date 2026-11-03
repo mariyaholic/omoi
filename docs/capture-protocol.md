@@ -60,7 +60,7 @@ writes from all tabs, caps admission at 128 pending handlers and its durable que
 at 1,024 events/4 MiB encoded UTF-8 JSON. Content adapters cap their awaiting-ack queues
 at 64. Only matching top-level supported origins can submit capture. There is no
 external/page-world message handler. Only the popup can connect/disconnect.
-Queue IDs survive retries and compatible restarts. Consent generation changes drop
+New samples require a current native status check; foreground-only samples made while the app is absent are not put into the durable queue. Previously accepted queue IDs survive retries and compatible restarts. Consent generation changes drop
 old queued events with a visible counter and reset producer epochs. Native poison
 playback events can be discarded explicitly; transport errors retain the head.
 Retries use a one-minute browser alarm after failed transport, and an unused native

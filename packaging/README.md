@@ -3,16 +3,18 @@
 Metadata/tag editing is in Details, exports are in Settings, and scheduling controls are in Sources. Optional playback setup is in **PLAYBACK.md**; launch **Run Playback.cmd** separately and install **omoi.user.js**. Capture does not start automatically. **ACCEPTANCE.md** records the scoped verification summary.
 
 1. Extract this ZIP to a folder.
-2. Double-click **Run Omoi.cmd**. Keep the console open while using the app.
-3. If the browser does not open, copy the URL printed in the console into Edge or another browser.
+2. Double-click **omoi-desktop.exe** or **Run Omoi.cmd**.
+3. Omoi opens in its own window. Closing it shuts down its local UI server.
 4. Choose **Sources**, check the browser profiles to import, select **Collect selected**, and confirm.
 5. Use **History** to search, filter and open item details. **Settings** contains all five themes.
 
 The default catalogue is `%LOCALAPPDATA%\omoi\history.sqlite`. Existing CLI data appears automatically. `OMOI_HOME` can select a different catalogue; it must be an absolute path. Starting the UI does not collect browser history or install a scheduled task.
 
-The local server exits after ten idle minutes. Use the app's Refresh button to reload data. Reloading the entire browser tab clears its session; reopen the console's launch URL. The URL grants access to this local session, so keep it private.
+Use the app's Refresh button to reload data. The desktop window restores its session when reloaded and keeps appearance settings in its own WebView2 profile. All five themes remain available. Original video links open in your default browser.
 
-If port 43822 is occupied, close the other Omoi console or run `omoi.exe ui --port 0 --open` in this folder. Appearance preferences are stored per browser origin, so an alternate port has separate preferences.
+The desktop uses loopback port 43823. If Omoi is already open, use its existing window. The browser interface remains available through `omoi.exe ui --port 0 --open`; its session and appearance settings are separate.
+
+Keep `WebView2Loader.dll` beside `omoi-desktop.exe`. The desktop uses the Microsoft Edge WebView2 Runtime supplied with Windows 11. Browser data is stored under the catalogue's `webview` folder, separate from your normal browser profiles.
 
 The same exports and scheduling controls are available through terminal commands:
 

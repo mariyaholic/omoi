@@ -1,5 +1,7 @@
 # Connected catalogue UI
 
+Windows desktop: launch `omoi-desktop.exe` with `WebView2Loader.dll` beside it. The native Omoi window uses the same catalogue, keeps its own appearance preferences, restores authentication on reload and stops its server when closed. It uses loopback port 43823 and a dedicated WebView2 profile under `OMOI_HOME/webview` (the default catalogue folder when no override is set). The CLI browser mode below remains optional.
+
 Current additions: Details includes **Edit metadata and tags**; Settings includes **Export JSON**, **Export CSV**, **Check playback inbox** and **Process playback**; Sources includes confirmed scheduler enable/disable and status. [Playback setup](../userscripts/README.md) and [follow-through notes](../docs/completion-20261103.md) supersede older CLI-only and unavailable-input statements below.
 
 Run `omoi ui --open`. Without `--open`, copy the printed launch URL into a browser.

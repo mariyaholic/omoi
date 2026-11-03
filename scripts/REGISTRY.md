@@ -2,6 +2,7 @@
 
 | Script | Purpose | Owner |
 |---|---|---|
+| build_icons.py | Reproduce PNG, ICO and native RGBA from the Pixel return SVG; requires Pillow, supports --check | codex.impl |
 | measure.py | Windows synthetic collector resource measurements | codex.impl |
 | smoke.py | CLI release journey with generated browser profiles | codex.impl |
 | verify_prototype.py | Fictional-data design study interaction and screenshot checks | codex.impl |
@@ -10,6 +11,7 @@
 | verify_schedule.py | Explicit isolated Windows task install/run/remove and registered settings | codex.impl |
 | verify_manager.py | Shipped userscript through a real manager in disposable headless Chromium | codex.impl |
 | verify_export.py | CSV/JSON correctness and lifetime memory/CPU on an existing synthetic 100k-view catalogue | codex.impl |
+| verify_desktop.py | Stage the Windows loader and check the hidden desktop window, reload and shutdown | codex.impl |
 | package_windows.py | Portable/source archives, file hashes and extracted executable check with system-only PATH | codex.impl |
 
 Run each with `--help` for inputs. UI scripts require Python Playwright and installed Edge; manager/zoom need bundled Chromium, and optional axe auditing needs a local axe-core script. The app itself has no Python or Playwright dependency. `examples/retained_week.rs` is a separate consent-gated local-history acceptance tool; never run it in CI or commit its personal aggregate receipt.

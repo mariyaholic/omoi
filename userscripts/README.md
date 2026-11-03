@@ -17,3 +17,16 @@ Metadata observed during playback fills missing title, channel and duration fiel
 Queues persist across reloads in manager storage: at most 32 queues of 256 events, retry backoff up to 60 seconds. A full queue drops its oldest event; excess new queues are refused until older queues drain. The listener inbox caps at 100,000 events and 20 MB of event bodies. Processed receipts persist for replay protection; database size can grow with retained usage. No automatic capture task is installed.
 
 API reference: [Tampermonkey documentation](https://www.tampermonkey.net/documentation.php?locale=en).
+
+Version 0.1.1 fixes stop/re-pair retry ownership, advertisement and unpaired-time
+accounting, playback-rate changes and SPA baseline emission. Replace the installed
+script in your manager to receive these changes; replacing the Omoi application
+files alone does not update a manager's installed script.
+
+Protocol: events have stable IDs and monotonically increasing sequence, timestamp
+and cumulative counter within a producer epoch. A new pairing or video identity
+starts a new epoch. HTTP 200 acknowledges an accepted event or duplicate; 400 drops
+an invalid event and advances the queue; authentication/network/storage failures
+retry with backoff. Events behind an already committed producer frontier are
+counted as late and discarded; counters cannot reset within the same producer.
+See [state transitions](../docs/state-machines.md) for persistence and overlap limits.

@@ -17,6 +17,7 @@ fn logs_global_cap_and_redaction() {
     let files: Vec<_> = std::fs::read_dir(&dir.0)
         .unwrap()
         .map(|e| e.unwrap().path())
+        .filter(|p| p.extension().is_some_and(|s| s == "log"))
         .collect();
     assert!(files.len() <= 2);
     let mut size = 0;
@@ -36,6 +37,13 @@ fn log_lock_fallback() {
     let dir = TempDir::create(&std::env::temp_dir()).unwrap();
     let lock = dir.0.join("logging.lock");
     std::fs::write(&lock, b"occupied").unwrap();
+    let owner = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(&lock)
+        .unwrap();
+    owner.try_lock().unwrap();
     assert!(logging::record(&dir.0, &Config::default(), None, 1).is_err());
+    drop(owner);
     assert_eq!(std::fs::read(lock).unwrap(), b"occupied");
 }

@@ -2,6 +2,7 @@
 
 | Script | Purpose | Owner |
 |---|---|---|
+| build_icons.py | Reproduce PNG, ICO and native RGBA from the Pixel return SVG; requires Pillow, supports --check | codex.impl |
 | measure.py | Windows synthetic collector resource measurements | codex.impl |
 | smoke.py | CLI release journey with generated browser profiles | codex.impl |
 | verify_prototype.py | Fictional-data design study interaction and screenshot checks | codex.impl |

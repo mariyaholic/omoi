@@ -550,7 +550,17 @@ fn serve_inner(
             }
             active = Instant::now();
         } else if req.method == "GET" {
+            if req.target == "/favicon.ico" {
+                let _ = response(
+                    &mut stream,
+                    200,
+                    "image/x-icon",
+                    include_bytes!("../assets/icon.ico"),
+                );
+                continue;
+            }
             let asset = match req.target.as_str() {
+                "/icon.svg" => Some(("image/svg+xml", include_str!("../assets/icon.svg"))),
                 "/forms.css" => Some(("text/css; charset=utf-8", include_str!("../ui/forms.css"))),
                 "/" => Some(("text/html; charset=utf-8", include_str!("../ui/index.html"))),
                 "/app.js" => Some((

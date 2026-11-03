@@ -168,6 +168,35 @@ fn desktop_server_lifetime_auth_and_startup_collision() {
     let url = url::Url::parse(&server.launch_url).unwrap();
     let host = format!("127.0.0.1:{}", url.port().unwrap());
     let token = url.fragment().unwrap().strip_prefix("token=").unwrap();
+    for (path, mime, expected) in [
+        (
+            "/icon.svg",
+            "image/svg+xml",
+            include_bytes!("../assets/icon.svg").as_slice(),
+        ),
+        (
+            "/favicon.ico",
+            "image/x-icon",
+            include_bytes!("../assets/icon.ico").as_slice(),
+        ),
+    ] {
+        let mut stream = TcpStream::connect(&host).unwrap();
+        stream
+            .set_read_timeout(Some(std::time::Duration::from_secs(5)))
+            .unwrap();
+        write!(
+            stream,
+            "GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
+        )
+        .unwrap();
+        let mut response = Vec::new();
+        stream.read_to_end(&mut response).unwrap();
+        let split = response.windows(4).position(|s| s == b"\r\n\r\n").unwrap();
+        let headers = String::from_utf8_lossy(&response[..split]);
+        assert!(headers.starts_with("HTTP/1.1 200"));
+        assert!(headers.contains(&format!("Content-Type: {mime}")));
+        assert_eq!(&response[split + 4..], expected);
+    }
     for (supplied, expected) in [("", "403"), (token, "200")] {
         let mut stream = TcpStream::connect(&host).unwrap();
         stream

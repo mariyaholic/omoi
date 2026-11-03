@@ -78,13 +78,13 @@ def main():
         page.screenshot(path=str(args.out / "empty-desktop.png"))
         page.get_by_role("button", name="Load sample library").click()
         page.locator('nav [data-page="settings"]').click()
-        page.get_by_role("button", name="Paper", exact=True).click()
+        page.get_by_role("button", name="Mariyaholic Confluence", exact=True).click()
         expect(page.locator("body")).to_have_css("background-color", "rgb(243, 239, 228)")
         page.get_by_role("button", name="Compact", exact=True).click()
         page.locator('nav [data-page="history"]').click()
         page.screenshot(path=str(args.out / "history-paper.png"))
         page.locator('nav [data-page="settings"]').click()
-        page.get_by_role("button", name="Panel", exact=True).click()
+        page.get_by_role("button", name="Mariyaholic Panel", exact=True).click()
         expect(page.locator("body")).to_have_css("background-color", "rgb(18, 20, 24)")
         page.locator('nav [data-page="history"]').click()
         page.screenshot(path=str(args.out / "history-panel.png"))
@@ -121,23 +121,52 @@ def main():
         assert page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches")
         page.get_by_role("button", name="Refresh sample", exact=True).last.click()
         expect(page.get_by_role("status")).to_contain_text("No browser history accessed.")
-        for theme in ("Paper", "Panel"):
+        themes = (
+            ("Uika", "night", "rgb(11, 9, 19)"),
+            ("Mariyaholic Confluence", "paper", "rgb(243, 239, 228)"),
+            ("Mariyaholic Panel", "panel", "rgb(18, 20, 24)"),
+            ("Mariyaholic-98", "pc98", "rgb(18, 12, 36)"),
+            ("Argonaut Oak", "oak", "rgb(7, 16, 13)"),
+        )
+        # Wait for transient status text to clear before theme review captures.
+        expect(page.locator("#toast")).not_to_be_visible(timeout=10000)
+        for theme, skin, background in themes:
             page.locator('nav [data-page="settings"]').click()
             page.get_by_role("button", name=theme, exact=True).click()
-            for name in ("history", "suggestions", "sources", "settings"):
-                page.locator(f'nav [data-page="{name}"]').click()
-                assert not page.evaluate("document.documentElement.scrollWidth > innerWidth"), f"{theme} overflow in {name} at 320px"
-            page.set_viewport_size({"width": 375, "height": 900})
+            expect(page.get_by_role("button", name=theme, exact=True)).to_be_focused()
+            expect(page.locator('[data-theme][aria-pressed="true"]')).to_have_count(1)
+            expect(page.locator("body")).to_have_css("background-color", background)
+            for width in (1440, 375, 320):
+                page.set_viewport_size({"width": width, "height": 1000 if width == 1440 else 900})
+                for name in ("history", "suggestions", "sources", "settings"):
+                    page.locator(f'nav [data-page="{name}"]').click()
+                    assert not page.evaluate("document.documentElement.scrollWidth > innerWidth"), f"{theme} overflow in {name} at {width}px"
+                    if width != 320:
+                        suffix = "desktop" if width == 1440 else "mobile"
+                        page.screenshot(path=str(args.out / f"{name}-{skin}-{suffix}.png"))
+                page.locator('nav [data-page="history"]').click()
+                page.locator('[data-open="17"]').click()
+                assert not page.locator("#detail").evaluate("el => el.scrollWidth > el.clientWidth"), f"{theme} detail overflow at {width}px"
+                if width == 375:
+                    page.screenshot(path=str(args.out / f"detail-{skin}-mobile.png"))
+                page.keyboard.press("Escape")
+            page.locator('nav [data-page="settings"]').click()
+            page.get_by_role("button", name="Compact", exact=True).click()
             page.locator('nav [data-page="history"]').click()
-            page.screenshot(path=str(args.out / f"history-{theme.lower()}-mobile.png"))
-            page.set_viewport_size({"width": 320, "height": 900})
+            expect(page.locator(".history-row").first).to_have_css("padding-top", "12px")
+            page.locator('nav [data-page="settings"]').click()
+            page.get_by_role("button", name="Comfortable", exact=True).click()
+        # Selecting Uika after every other skin must clear the old typography.
+        page.get_by_role("button", name="Uika", exact=True).click()
+        expect(page.locator("body")).to_have_css("background-color", themes[0][2])
+        assert "Segoe UI" in page.locator("body").evaluate("el => getComputedStyle(el).fontFamily")
         file_url = (Path(__file__).resolve().parents[1] / "prototype/index.html").as_uri()
         page.goto(file_url, wait_until="networkidle")
         expect(page.locator(".history-row")).to_have_count(18)
         expect(page.locator("body")).to_have_css("background-color", "rgb(11, 9, 19)")
         assert not errors, errors
         assert not external, external
-        report = {"result": "pass", "browser": browser.version, "screenshots": sorted(p.name for p in args.out.glob("*.png")), "widths": [1440, 375, 320], "javascript_errors": errors, "external_requests": external, "checks": ["search and literal hostile text", "platform/date filters", "save/remove/cancel/undo", "Escape and focus return", "search shortcut", "suggestion budget and topic selection", "profile selection", "simulated automation", "partial/empty states", "Night/Paper/Panel themes and computed colors", "density and reset on reload", "all screens at 320 and 375 pixels", "Paper/Panel all screens at 320 pixels", "long title detail", "reduced motion", "sample export and reset", "mobile refresh", "direct file loading"]}
+        report = {"result": "pass", "browser": browser.version, "screenshots": sorted(p.name for p in args.out.glob("*.png")), "widths": [1440, 375, 320], "javascript_errors": errors, "external_requests": external, "themes": [t[0] for t in themes], "checks": ["search and literal hostile text", "platform/date filters", "save/remove/cancel/undo", "Escape and focus return", "search shortcut", "suggestion budget and topic selection", "profile selection", "simulated automation", "partial/empty states", "all five themes and computed colors", "theme selection focus and selected state", "density in every theme and reset on reload", "all four screens and long title detail in all five themes at all three widths", "return to default palette and typography", "reduced motion", "sample export and reset", "mobile refresh", "direct file loading"]}
         (args.out / "verification.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
         print(json.dumps(report, indent=2))
         browser.close()

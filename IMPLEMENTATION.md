@@ -1,6 +1,9 @@
 # Omoi implementation handoff
 
-Prepared 2026-11-03 for Astra and local implementers. This is a work plan, not a claim that Omoi runs today.
+Historical foundation roadmap, prepared 2026-11-03 for Astra and local implementers.
+Omoi now runs; the foundation starting point below is historical. For the current
+installation-friction assignment, start with [CLOUD_HANDOFF.md](CLOUD_HANDOFF.md)
+and its linked plan. Do not restart U1 or treat the old missing-reader error as current.
 
 Current implementation evidence and remaining work are in [PROGRESS.md](PROGRESS.md); its status supersedes the historical starting point below.
 

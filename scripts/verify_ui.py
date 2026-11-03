@@ -3,6 +3,7 @@
 Requires Python Playwright and installed Edge. Saves screenshots and a JSON receipt.
 """
 import argparse
+import base64
 import ctypes
 from contextlib import closing
 import http.client
@@ -76,13 +77,20 @@ def verify_zoom(playwright, root, launch_url, out):
     (extension/'manifest.json').write_text(json.dumps({'manifest_version':3,'name':'Omoi isolated zoom test','version':'1.0','host_permissions':['http://127.0.0.1/*'],'background':{'service_worker':'worker.js'}}),encoding='utf-8')
     (extension/'worker.js').write_text('chrome.runtime.onInstalled.addListener(()=>{});',encoding='utf-8')
     context=playwright.chromium.launch_persistent_context(str(root/'zoom-browser'),channel='chromium',headless=True,
-        viewport={'width':1280,'height':960},args=[f'--disable-extensions-except={extension}',f'--load-extension={extension}'])
+        no_viewport=True,args=['--window-size=1280,960','--force-device-scale-factor=1',f'--disable-extensions-except={extension}',f'--load-extension={extension}'])
     checks=[]
     try:
         worker=context.service_workers[0] if context.service_workers else context.wait_for_event('serviceworker')
         page=context.new_page()
         page.goto(launch_url)
+        page.bring_to_front()
         expect(page.locator('.history-row')).to_have_count(50)
+        # Windows window decorations consume part of --window-size. Set the client width.
+        cdp=context.new_cdp_session(page)
+        window=cdp.send('Browser.getWindowForTarget')
+        cdp.send('Browser.setWindowBounds',{'windowId':window['windowId'],'bounds':{'width':window['bounds']['width']+1280-page.evaluate('innerWidth')}})
+        page.wait_for_function('innerWidth===1280')
+        assert page.evaluate('innerWidth')==1280,page.evaluate('({width:innerWidth,dpr:devicePixelRatio})')
         tab=worker.evaluate("async()=>{const tabs=await chrome.tabs.query({url:'http://127.0.0.1/*'});return tabs[0].id}")
         for name in ('Uika','Confluence','Panel','Mariyaholic-98','Argonaut Oak'):
             worker.evaluate('([tab,zoom])=>chrome.tabs.setZoom(tab,zoom)',[tab,1])
@@ -104,7 +112,12 @@ def verify_zoom(playwright, root, launch_url, out):
                 page.get_by_role('button',name='Save changes',exact=True).click()
                 expect(page.locator('#message')).to_have_text('Item saved.')
                 if zoom==4:
-                    page.screenshot(path=str(out/f'zoom-400-{name.lower()}.png'))
+                    page.locator('#page-title').scroll_into_view_if_needed()
+                    expect(page.locator('#page-title')).to_be_in_viewport()
+                    page.bring_to_front()
+                    page.evaluate('()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))')
+                    capture=cdp.send('Page.captureScreenshot',{'format':'png','fromSurface':True,'captureBeyondViewport':False})
+                    (out/f'zoom-400-{name.lower()}.png').write_bytes(base64.b64decode(capture['data']))
                 checks.append({'theme':name,'zoom':zoom,'screen':'edit-dialog','action':'saved'})
         return {'result':'pass','method':'chrome.tabs.setZoom in disposable headless Chromium; actual 200% and 400% browser zoom','checks':checks}
     finally:

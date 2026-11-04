@@ -146,8 +146,6 @@ def world(t, ending=False):
         pixel_text(im, (320, 26), 'omoi', 57, 'paper', 'center')
         if t >= .8:
             pixel_text(im, (320, 96), 'Local watch history for the PC', 20, 'ink', 'center')
-        if t >= 1.4:
-            pixel_text(im, (320, 128), 'Windows · development preview', 15, 'light', 'center')
         pixel_text(im, (320, 324), 'APP CAPTURE / SYNTHETIC DATA', 11, 'light', 'center')
     else:
         pixel_text(im, (38, 32), 'OMOI', 12, 'pink')

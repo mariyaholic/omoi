@@ -6,6 +6,7 @@ resolver = "2"
 name = "omoi"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
 
 [dependencies]
 rusqlite = { version = "0.37", features = ["bundled", "backup"] }

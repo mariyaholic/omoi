@@ -25,7 +25,7 @@
 
 - `omoi`
 - `Local watch history for the PC`, from 35.3 s
-- `APP CAPTURE / SYNTHETIC DATA`
+- `v0.1.0` (version from Cargo.toml at cc530f0)
 
 ## Capture and source
 

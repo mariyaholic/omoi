@@ -25,7 +25,6 @@
 
 - `omoi`
 - `Local watch history for the PC`, from 35.3 s
-- `Windows · development preview`, from 35.9 s
 - `APP CAPTURE / SYNTHETIC DATA`
 
 ## Capture and source

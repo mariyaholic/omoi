@@ -1,0 +1,46 @@
+{
+  "v1-production": {
+    "bytes": 949721,
+    "format_duration_s": 26.005,
+    "video_duration_s": 26.0,
+    "audio_duration_s": 26.005,
+    "audio_sample_rate": 48000,
+    "integrated_lufs": -14.1,
+    "lra_lu": 5.7,
+    "true_peak_dbtp": -1.5,
+    "max_frame_to_frame_luma_change": 4.8
+  },
+  "v1-rev1": {
+    "bytes": 2577664,
+    "format_duration_s": 40.0,
+    "video_duration_s": 40.0,
+    "audio_duration_s": 40.0,
+    "audio_sample_rate": 96000,
+    "integrated_lufs": -16.0,
+    "lra_lu": 1.0,
+    "true_peak_dbtp": -1.5,
+    "max_frame_to_frame_luma_change": 197.21
+  },
+  "v2": {
+    "bytes": 2493176,
+    "format_duration_s": 40.0,
+    "video_duration_s": 40.0,
+    "audio_duration_s": 40.0,
+    "audio_sample_rate": 96000,
+    "integrated_lufs": -16.0,
+    "lra_lu": 1.0,
+    "true_peak_dbtp": -1.5,
+    "max_frame_to_frame_luma_change": 199.13
+  },
+  "v3": {
+    "bytes": 4186870,
+    "format_duration_s": 40.0,
+    "video_duration_s": 40.0,
+    "audio_duration_s": 40.0,
+    "audio_sample_rate": 48000,
+    "integrated_lufs": -14.1,
+    "lra_lu": 5.9,
+    "true_peak_dbtp": -2.3,
+    "max_frame_to_frame_luma_change": 17.55
+  }
+}

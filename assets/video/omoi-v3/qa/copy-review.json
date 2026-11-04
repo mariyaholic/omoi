@@ -1,0 +1,43 @@
+{
+  "captions": [
+    "Browse",
+    "Check openings",
+    "Choose sources",
+    "Find",
+    "Find it again",
+    "Inspect",
+    "Keep browsing",
+    "Search",
+    "Switch themes",
+    "Tag",
+    "omoi"
+  ],
+  "authored_text": [
+    "Browse",
+    "Check openings",
+    "Choose sources",
+    "Find",
+    "Find it again",
+    "Inspect",
+    "Keep browsing",
+    "Search",
+    "Switch themes",
+    "Tag",
+    "omoi",
+    "OMOI",
+    "OMOI / UNSAVED PREVIEW",
+    "APP CAPTURE",
+    "SYNTHETIC DATA",
+    "APP CAPTURE / SYNTHETIC DATA",
+    "Local watch history for the PC",
+    "Windows · development preview"
+  ],
+  "periods_in_authored_text": false,
+  "preserved_labels": [
+    "UNSAVED PREVIEW",
+    "APP CAPTURE",
+    "SYNTHETIC DATA"
+  ],
+  "ending_line_source": "README.md first line: \"Local, low-overhead watch history for the PC\"",
+  "evidence_caveat": "Original UI states tab time is an approximation, not measured playback; held in frame 15.5-18 s"
+}

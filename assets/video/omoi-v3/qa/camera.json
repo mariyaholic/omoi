@@ -1,0 +1,109 @@
+{
+  "window_px": [
+    1806,
+    732
+  ],
+  "note": "Output px per capture px, over every rendered frame. Above 1.0 is an upscale.",
+  "shots": {
+    "01-sources-0": {
+      "device_scale_factor": 3,
+      "scale_min": 0.7053,
+      "scale_max": 0.7053
+    },
+    "01-sources-1": {
+      "device_scale_factor": 3,
+      "scale_min": 0.7053,
+      "scale_max": 0.7053
+    },
+    "01-sources-2": {
+      "device_scale_factor": 3,
+      "scale_min": 0.7053,
+      "scale_max": 0.7053
+    },
+    "02-confirmation": {
+      "device_scale_factor": 3,
+      "scale_min": 0.7053,
+      "scale_max": 0.7053
+    },
+    "03-history": {
+      "device_scale_factor": 3,
+      "scale_min": 0.5375,
+      "scale_max": 0.6459
+    },
+    "04-search-0-empty": {
+      "device_scale_factor": 3,
+      "scale_min": 0.6976,
+      "scale_max": 0.6976
+    },
+    "04-search-1-t": {
+      "device_scale_factor": 3,
+      "scale_min": 0.6976,
+      "scale_max": 0.6976
+    },
+    "04-search-2-tr": {
+      "device_scale_factor": 3,
+      "scale_min": 0.6976,
+      "scale_max": 0.6976
+    },
+    "04-search-3-tra": {
+      "device_scale_factor": 3,
+      "scale_min": 0.6976,
+      "scale_max": 0.6976
+    },
+    "04-search-4-trai": {
+      "device_scale_factor": 3,
+      "scale_min": 0.6976,
+      "scale_max": 0.6976
+    },
+    "04-search-5-train": {
+      "device_scale_factor": 3,
+      "scale_min": 0.5448,
+      "scale_max": 0.6976
+    },
+    "05-search-result": {
+      "device_scale_factor": 3,
+      "scale_min": 0.5448,
+      "scale_max": 0.6976
+    },
+    "05-search-result-close": {
+      "device_scale_factor": 5,
+      "scale_min": 0.8209,
+      "scale_max": 0.8479
+    },
+    "06-details": {
+      "device_scale_factor": 5,
+      "scale_min": 0.5653,
+      "scale_max": 0.8662
+    },
+    "08-edit-tags-0-empty": {
+      "device_scale_factor": 5,
+      "scale_min": 0.8662,
+      "scale_max": 0.8662
+    },
+    "08-edit-tags-1-miniatures": {
+      "device_scale_factor": 5,
+      "scale_min": 0.8662,
+      "scale_max": 0.8662
+    },
+    "08-edit-tags-2-night-train": {
+      "device_scale_factor": 5,
+      "scale_min": 0.8662,
+      "scale_max": 0.8662
+    },
+    "09-appearance": {
+      "device_scale_factor": 3,
+      "scale_min": 0.6459,
+      "scale_max": 0.6459
+    },
+    "09-appearance-confluence": {
+      "device_scale_factor": 3,
+      "scale_min": 0.6459,
+      "scale_max": 0.6459
+    },
+    "10-confluence": {
+      "device_scale_factor": 3,
+      "scale_min": 0.5235,
+      "scale_max": 0.5235
+    }
+  }
+}

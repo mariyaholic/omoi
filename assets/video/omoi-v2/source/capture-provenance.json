@@ -1,0 +1,92 @@
+{
+  "repository": "https://github.com/mariyaholic/omoi",
+  "commit": "cc530f0af90128c7ff933f80d782d7cfc2a31cf4",
+  "capture_method": "CUA screenshots of connected Rust browser UI; genuine app, synthetic browser histories",
+  "native_windows_shell": false,
+  "personal_history_used": false,
+  "catalogue_items": 8,
+  "browser_openings": 8,
+  "editor_saved": false,
+  "shots": [
+    {
+      "file": "01-sources.png",
+      "sha256": "6577640b6189e8b4e4dec0d712fd63fb8065ff0c4766c3ffd5a24db033307238",
+      "dimensions": [
+        1165,
+        747
+      ]
+    },
+    {
+      "file": "02-confirmation.png",
+      "sha256": "342bebecb7575c65f394173a5835e611c8341836b827d39dc41f29216839671c",
+      "dimensions": [
+        1165,
+        747
+      ]
+    },
+    {
+      "file": "03-history.png",
+      "sha256": "afc3cd7aaee34da904a0701a861b410405935336acc5fd2d8cd5332fa2f921e6",
+      "dimensions": [
+        1165,
+        747
+      ]
+    },
+    {
+      "file": "04-search-input.png",
+      "sha256": "141c3d8d5db4d9de9d5d1227ebd0a67170094198c040a1b13eddb1b5007121df",
+      "dimensions": [
+        1165,
+        747
+      ]
+    },
+    {
+      "file": "05-search-result.png",
+      "sha256": "ac75bd169860ff6074f5811204c28750254690f1134788d225a209022dd3680f",
+      "dimensions": [
+        1180,
+        757
+      ]
+    },
+    {
+      "file": "06-details.png",
+      "sha256": "8d0c8ea2e1d6ae4578299db2d62a804f6b7ebc5e7e18fa3f183887fe9d4be36e",
+      "dimensions": [
+        1180,
+        757
+      ]
+    },
+    {
+      "file": "07-opening-evidence.png",
+      "sha256": "d8c3671f16466c60ef491cf6656dc73c09426331d861eb0632b40c5439fd74f3",
+      "dimensions": [
+        1180,
+        757
+      ]
+    },
+    {
+      "file": "08-edit-tags.png",
+      "sha256": "62814feeaf440309cdac8b3e5ade30e7f0c64a4869c1c08f104e9e692dccddfa",
+      "dimensions": [
+        1180,
+        757
+      ]
+    },
+    {
+      "file": "09-appearance.png",
+      "sha256": "4821d63cb54b1de765c822a9129122ddb5bb0043a4a765cdd5adf861b928b059",
+      "dimensions": [
+        900,
+        385
+      ]
+    },
+    {
+      "file": "10-confluence.png",
+      "sha256": "2a5c4060706719c83b784dc8ef491ae5f9d9a9d0cb1912a87b081b7bc8166d9c",
+      "dimensions": [
+        1165,
+        747
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "file": "frames-07-09s.jpg",
+    "range_s": [
+      7,
+      9
+    ],
+    "frames": 13,
+    "frames_per_film_second": 6.0
+  },
+  {
+    "file": "frames-11-13s.jpg",
+    "range_s": [
+      11,
+      13
+    ],
+    "frames": 13,
+    "frames_per_film_second": 6.0
+  },
+  {
+    "file": "frames-13-21s.jpg",
+    "range_s": [
+      13,
+      21
+    ],
+    "frames": 49,
+    "frames_per_film_second": 6.0
+  },
+  {
+    "file": "frames-21-29s.jpg",
+    "range_s": [
+      21,
+      29
+    ],
+    "frames": 49,
+    "frames_per_film_second": 6.0
+  },
+  {
+    "file": "frames-29-35s.jpg",
+    "range_s": [
+      29,
+      35
+    ],
+    "frames": 37,
+    "frames_per_film_second": 6.0
+  }
+]

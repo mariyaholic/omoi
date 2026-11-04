@@ -1,0 +1,382 @@
+{
+  "method": "Decoded frames of omoi-v2.mp4 and omoi-v3.mp4; Rec.709 luma of the same on-screen region at 1:1; scipy Laplacian and Sobel. Framing differs between films, so read these with the side-by-side crops; the p99 gradient is the least content-dependent figure.",
+  "shots": [
+    {
+      "shot": "search-box-typed",
+      "what": "Search box with \"train\" and the filter row",
+      "v2_second": 8.0,
+      "v3_second": 7.74,
+      "region_xyxy": [
+        300,
+        300,
+        1500,
+        700
+      ],
+      "v2": {
+        "variance_of_laplacian": 445.22,
+        "mean_gradient_magnitude": 8.28,
+        "p99_gradient_magnitude": 83.792
+      },
+      "v3": {
+        "variance_of_laplacian": 1478.57,
+        "mean_gradient_magnitude": 6.684,
+        "p99_gradient_magnitude": 101.157
+      },
+      "ratio_v3_over_v2": {
+        "variance_of_laplacian": 3.32,
+        "mean_gradient_magnitude": 0.81,
+        "p99_gradient_magnitude": 1.21
+      },
+      "stage_window": {
+        "region_xyxy": [
+          57,
+          243,
+          1863,
+          975
+        ],
+        "v2": {
+          "variance_of_laplacian": 311.08,
+          "mean_gradient_magnitude": 6.072,
+          "p99_gradient_magnitude": 74.57
+        },
+        "v3": {
+          "variance_of_laplacian": 1397.81,
+          "mean_gradient_magnitude": 6.556,
+          "p99_gradient_magnitude": 105.127
+        },
+        "ratio_v3_over_v2": {
+          "variance_of_laplacian": 4.49,
+          "mean_gradient_magnitude": 1.08,
+          "p99_gradient_magnitude": 1.41
+        }
+      }
+    },
+    {
+      "shot": "search-result-title",
+      "what": "Close-up of the result title; same timestamp",
+      "v2_second": 12.0,
+      "v3_second": 12.0,
+      "region_xyxy": [
+        420,
+        480,
+        1620,
+        880
+      ],
+      "v2": {
+        "variance_of_laplacian": 96.82,
+        "mean_gradient_magnitude": 2.548,
+        "p99_gradient_magnitude": 58.462
+      },
+      "v3": {
+        "variance_of_laplacian": 510.88,
+        "mean_gradient_magnitude": 3.192,
+        "p99_gradient_magnitude": 84.729
+      },
+      "ratio_v3_over_v2": {
+        "variance_of_laplacian": 5.28,
+        "mean_gradient_magnitude": 1.25,
+        "p99_gradient_magnitude": 1.45
+      },
+      "stage_window": {
+        "region_xyxy": [
+          57,
+          243,
+          1863,
+          975
+        ],
+        "v2": {
+          "variance_of_laplacian": 67.71,
+          "mean_gradient_magnitude": 1.86,
+          "p99_gradient_magnitude": 54.215
+        },
+        "v3": {
+          "variance_of_laplacian": 365.09,
+          "mean_gradient_magnitude": 2.414,
+          "p99_gradient_magnitude": 76.631
+        },
+        "ratio_v3_over_v2": {
+          "variance_of_laplacian": 5.39,
+          "mean_gradient_magnitude": 1.3,
+          "p99_gradient_magnitude": 1.41
+        }
+      }
+    },
+    {
+      "shot": "details-values",
+      "what": "Duration, playback and openings values",
+      "v2_second": 15.0,
+      "v3_second": 14.0,
+      "region_xyxy": [
+        300,
+        300,
+        1500,
+        900
+      ],
+      "v2": {
+        "variance_of_laplacian": 4.96,
+        "mean_gradient_magnitude": 1.034,
+        "p99_gradient_magnitude": 20.321
+      },
+      "v3": {
+        "variance_of_laplacian": 113.84,
+        "mean_gradient_magnitude": 1.109,
+        "p99_gradient_magnitude": 34.664
+      },
+      "ratio_v3_over_v2": {
+        "variance_of_laplacian": 22.95,
+        "mean_gradient_magnitude": 1.07,
+        "p99_gradient_magnitude": 1.71
+      },
+      "stage_window": {
+        "region_xyxy": [
+          57,
+          243,
+          1863,
+          975
+        ],
+        "v2": {
+          "variance_of_laplacian": 9.84,
+          "mean_gradient_magnitude": 1.462,
+          "p99_gradient_magnitude": 24.047
+        },
+        "v3": {
+          "variance_of_laplacian": 145.79,
+          "mean_gradient_magnitude": 1.168,
+          "p99_gradient_magnitude": 40.38
+        },
+        "ratio_v3_over_v2": {
+          "variance_of_laplacian": 14.82,
+          "mean_gradient_magnitude": 0.8,
+          "p99_gradient_magnitude": 1.68
+        }
+      }
+    },
+    {
+      "shot": "openings-caveat",
+      "what": "Recent openings and the tab-time caveat",
+      "v2_second": 19.0,
+      "v3_second": 17.0,
+      "region_xyxy": [
+        300,
+        300,
+        1500,
+        900
+      ],
+      "v2": {
+        "variance_of_laplacian": 36.2,
+        "mean_gradient_magnitude": 3.492,
+        "p99_gradient_magnitude": 38.802
+      },
+      "v3": {
+        "variance_of_laplacian": 496.67,
+        "mean_gradient_magnitude": 3.108,
+        "p99_gradient_magnitude": 72.645
+      },
+      "ratio_v3_over_v2": {
+        "variance_of_laplacian": 13.72,
+        "mean_gradient_magnitude": 0.89,
+        "p99_gradient_magnitude": 1.87
+      },
+      "stage_window": {
+        "region_xyxy": [
+          57,
+          243,
+          1863,
+          975
+        ],
+        "v2": {
+          "variance_of_laplacian": 23.79,
+          "mean_gradient_magnitude": 2.296,
+          "p99_gradient_magnitude": 35.631
+        },
+        "v3": {
+          "variance_of_laplacian": 349.39,
+          "mean_gradient_magnitude": 2.213,
+          "p99_gradient_magnitude": 67.831
+        },
+        "ratio_v3_over_v2": {
+          "variance_of_laplacian": 14.69,
+          "mean_gradient_magnitude": 0.96,
+          "p99_gradient_magnitude": 1.9
+        }
+      }
+    },
+    {
+      "shot": "tag-editor",
+      "what": "Unsaved tag editor",
+      "v2_second": 23.0,
+      "v3_second": 20.0,
+      "region_xyxy": [
+        300,
+        300,
+        1500,
+        900
+      ],
+      "v2": {
+        "variance_of_laplacian": 30.72,
+        "mean_gradient_magnitude": 2.648,
+        "p99_gradient_magnitude": 44.086
+      },
+      "v3": {
+        "variance_of_laplacian": 390.23,
+        "mean_gradient_magnitude": 2.032,
+        "p99_gradient_magnitude": 80.012
+      },
+      "ratio_v3_over_v2": {
+        "variance_of_laplacian": 12.7,
+        "mean_gradient_magnitude": 0.77,
+        "p99_gradient_magnitude": 1.81
+      },
+      "stage_window": {
+        "region_xyxy": [
+          57,
+          243,
+          1863,
+          975
+        ],
+        "v2": {
+          "variance_of_laplacian": 34.53,
+          "mean_gradient_magnitude": 3.25,
+          "p99_gradient_magnitude": 44.223
+        },
+        "v3": {
+          "variance_of_laplacian": 541.86,
+          "mean_gradient_magnitude": 2.895,
+          "p99_gradient_magnitude": 82.681
+        },
+        "ratio_v3_over_v2": {
+          "variance_of_laplacian": 15.69,
+          "mean_gradient_magnitude": 0.89,
+          "p99_gradient_magnitude": 1.87
+        }
+      }
+    },
+    {
+      "shot": "sources-dialog",
+      "what": "Collection confirmation dialog",
+      "v2_second": 27.0,
+      "v3_second": 24.0,
+      "region_xyxy": [
+        300,
+        300,
+        1500,
+        900
+      ],
+      "v2": {
+        "variance_of_laplacian": 160.95,
+        "mean_gradient_magnitude": 3.998,
+        "p99_gradient_magnitude": 62.0
+      },
+      "v3": {
+        "variance_of_laplacian": 574.18,
+        "mean_gradient_magnitude": 3.231,
+        "p99_gradient_magnitude": 79.289
+      },
+      "ratio_v3_over_v2": {
+        "variance_of_laplacian": 3.57,
+        "mean_gradient_magnitude": 0.81,
+        "p99_gradient_magnitude": 1.28
+      },
+      "stage_window": {
+        "region_xyxy": [
+          57,
+          243,
+          1863,
+          975
+        ],
+        "v2": {
+          "variance_of_laplacian": 90.37,
+          "mean_gradient_magnitude": 2.353,
+          "p99_gradient_magnitude": 55.397
+        },
+        "v3": {
+          "variance_of_laplacian": 380.42,
+          "mean_gradient_magnitude": 2.37,
+          "p99_gradient_magnitude": 68.773
+        },
+        "ratio_v3_over_v2": {
+          "variance_of_laplacian": 4.21,
+          "mean_gradient_magnitude": 1.01,
+          "p99_gradient_magnitude": 1.24
+        }
+      }
+    },
+    {
+      "shot": "themes",
+      "what": "Five theme controls",
+      "v2_second": 30.5,
+      "v3_second": 27.5,
+      "region_xyxy": [
+        300,
+        300,
+        1500,
+        900
+      ],
+      "v2": {
+        "variance_of_laplacian": 321.06,
+        "mean_gradient_magnitude": 4.601,
+        "p99_gradient_magnitude": 71.483
+      },
+      "v3": {
+        "variance_of_laplacian": 843.96,
+        "mean_gradient_magnitude": 4.078,
+        "p99_gradient_magnitude": 84.987
+      },
+      "ratio_v3_over_v2": {
+        "variance_of_laplacian": 2.63,
+        "mean_gradient_magnitude": 0.89,
+        "p99_gradient_magnitude": 1.19
+      },
+      "stage_window": {
+        "region_xyxy": [
+          57,
+          243,
+          1863,
+          975
+        ],
+        "v2": {
+          "variance_of_laplacian": 292.47,
+          "mean_gradient_magnitude": 4.059,
+          "p99_gradient_magnitude": 71.965
+        },
+        "v3": {
+          "variance_of_laplacian": 798.8,
+          "mean_gradient_magnitude": 3.668,
+          "p99_gradient_magnitude": 85.346
+        },
+        "ratio_v3_over_v2": {
+          "variance_of_laplacian": 2.73,
+          "mean_gradient_magnitude": 0.9,
+          "p99_gradient_magnitude": 1.19
+        }
+      }
+    },
+    {
+      "shot": "control-pixel-art-city",
+      "what": "Control: pixel city and train, same art at the same second",
+      "v2_second": 1.8,
+      "v3_second": 1.8,
+      "region_xyxy": [
+        0,
+        480,
+        1920,
+        880
+      ],
+      "v2": {
+        "variance_of_laplacian": 434.64,
+        "mean_gradient_magnitude": 2.926,
+        "p99_gradient_magnitude": 71.676
+      },
+      "v3": {
+        "variance_of_laplacian": 414.36,
+        "mean_gradient_magnitude": 2.869,
+        "p99_gradient_magnitude": 71.697
+      },
+      "ratio_v3_over_v2": {
+        "variance_of_laplacian": 0.95,
+        "mean_gradient_magnitude": 0.98,
+        "p99_gradient_magnitude": 1.0
+      }
+    }
+  ]
+}

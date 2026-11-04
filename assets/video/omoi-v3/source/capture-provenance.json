@@ -1,0 +1,641 @@
+{
+  "repository": "https://github.com/mariyaholic/omoi",
+  "commit": "cc530f0af90128c7ff933f80d782d7cfc2a31cf4",
+  "binary_sha256": "7abc9e6780b5a3feaa22992979fb011951205c22059493437850fca0107ec819",
+  "capture_method": "Playwright screenshots of the connected Rust browser UI (omoi ui) in headless Chromium; genuine app, synthetic browser histories",
+  "browser": "Chromium 156.0.8078.4 headless, --font-render-hinting=none --disable-lcd-text, prefers-reduced-motion, timezone UTC, locale en-US",
+  "native_windows_shell": false,
+  "personal_history_used": false,
+  "sandbox": {
+    "env": [
+      "HOME",
+      "XDG_DATA_HOME",
+      "XDG_CONFIG_HOME",
+      "OMOI_HOME"
+    ],
+    "all_under": "work/sandbox",
+    "omoi_paths_checked": 10,
+    "collection": "omoi collect on two fake Chromium History files: Demo Chrome and Demo Edge"
+  },
+  "collect_report": {
+    "profiles_found": 2,
+    "profiles_failed": 0,
+    "items_inserted": 8,
+    "views_inserted": 8
+  },
+  "catalogue_items": 8,
+  "browser_openings": 8,
+  "editor_saved": false,
+  "catalogue_after_capture": {
+    "items": 8,
+    "browser_openings": 8,
+    "tags": 0,
+    "kinds": [
+      "video"
+    ]
+  },
+  "external_requests": [],
+  "javascript_errors": [],
+  "titles_read_from_v2_captures": [
+    "Night sky timelapse above the ridge",
+    "Building a miniature night train",
+    "Making a loop from field recordings",
+    "How Tokyo sounds after midnight"
+  ],
+  "titles_newly_authored": [
+    "Drawing rain on a small window",
+    "Repairing an old radio by lamplight",
+    "Mapping the last bus of the night",
+    "A quiet walk past the harbour cranes"
+  ],
+  "fonts_used_on_capture_machine": {
+    "Mariyaholic-98": {
+      "heading": [
+        "JetBrains Mono"
+      ],
+      "row_title": [
+        "JetBrains Mono"
+      ],
+      "row_time": [
+        "JetBrains Mono"
+      ]
+    },
+    "Confluence": {
+      "heading": [
+        "Tinos"
+      ],
+      "row_title": [
+        "Arimo"
+      ],
+      "row_time": [
+        "Cousine"
+      ]
+    }
+  },
+  "layout_css": {
+    "history": {
+      "main": [
+        218,
+        0,
+        932,
+        1365.3
+      ],
+      "rows": [
+        266.45,
+        345.8,
+        835.09,
+        85.75
+      ],
+      "last_row": [
+        266.453125,
+        1150.046875,
+        835.09375,
+        85.75
+      ]
+    },
+    "search": {
+      "searchbox": [
+        266.45,
+        109.8,
+        835.09,
+        49
+      ],
+      "count": [
+        266.45,
+        259.8,
+        835.09,
+        18
+      ]
+    },
+    "result": {
+      "searchbox": [
+        266.45,
+        109.8,
+        835.09,
+        49
+      ],
+      "count": [
+        266.45,
+        259.8,
+        835.09,
+        18
+      ],
+      "day": [
+        266.45,
+        304.8,
+        835.09,
+        41
+      ],
+      "row": [
+        266.45,
+        345.8,
+        835.09,
+        85.75
+      ],
+      "pagination": [
+        266.45,
+        455.55,
+        835.09,
+        41.5
+      ]
+    },
+    "closeup": {
+      "day": [
+        266.45,
+        304.8,
+        835.09,
+        41
+      ],
+      "row": [
+        266.45,
+        345.8,
+        835.09,
+        85.75
+      ],
+      "title": [
+        394.45,
+        365.8,
+        533.09,
+        21.75
+      ],
+      "meta": [
+        944.55,
+        369.42,
+        112,
+        37.5
+      ]
+    },
+    "details": {
+      "sheet": [
+        730,
+        0,
+        420,
+        971
+      ],
+      "title": [
+        763,
+        98,
+        355,
+        128.67
+      ],
+      "rows": [
+        763,
+        286.17,
+        355,
+        225
+      ],
+      "actions": [
+        763,
+        567.17,
+        355,
+        198
+      ],
+      "visits": [
+        763,
+        789.17,
+        355,
+        150.19
+      ],
+      "caveat": [
+        763,
+        835.17,
+        355,
+        43.19
+      ],
+      "visit": [
+        763,
+        878.36,
+        355,
+        61
+      ],
+      "row_duration": [
+        763,
+        376.17,
+        355,
+        45
+      ],
+      "row_openings": [
+        763,
+        466.17,
+        355,
+        45
+      ]
+    },
+    "editor": {
+      "sheet": [
+        730,
+        0,
+        420,
+        747
+      ],
+      "tags": [
+        763,
+        509.89,
+        355,
+        127
+      ],
+      "save": [
+        763,
+        668.89,
+        355,
+        44
+      ]
+    },
+    "sources": {
+      "title": [
+        266.45,
+        113.8,
+        835.09,
+        30.8
+      ],
+      "rows": [
+        266.45,
+        161.59,
+        835.09,
+        93.5
+      ],
+      "actions": [
+        266.45,
+        372.59,
+        835.09,
+        43.5
+      ],
+      "automation": [
+        266.45,
+        503.69,
+        835.09,
+        231.19
+      ],
+      "row_edge": [
+        266.45,
+        255.09,
+        835.09,
+        93.5
+      ]
+    },
+    "confirmation": {
+      "dialog": [
+        355,
+        215.97,
+        440,
+        268.06
+      ],
+      "rows": [
+        266.45,
+        161.59,
+        835.09,
+        93.5
+      ],
+      "section": [
+        266.45,
+        113.8,
+        835.09,
+        30.8
+      ],
+      "automation": [
+        266.45,
+        503.69,
+        835.09,
+        231.19
+      ],
+      "row_edge": [
+        266.45,
+        255.09,
+        835.09,
+        93.5
+      ]
+    },
+    "settings": {
+      "gallery": [
+        266.45,
+        156.59,
+        835.09,
+        224
+      ]
+    },
+    "settings_light": {
+      "gallery": [
+        266.45,
+        150.39,
+        835.09,
+        224
+      ]
+    },
+    "confluence": {
+      "main": [
+        218,
+        0.05,
+        932,
+        1332.89
+      ],
+      "rows": [
+        266.45,
+        334.44,
+        835.09,
+        85.75
+      ]
+    }
+  },
+  "shots": [
+    {
+      "file": "03-history.png",
+      "css_viewport": [
+        1150,
+        1365
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        4095
+      ],
+      "sha256": "3e7da81145061361ac5186b620332ab9909b30ad537f535d733e59696f07fe0e",
+      "note": "Window grown to the document height; no scrolling"
+    },
+    {
+      "file": "04-search-0-empty.png",
+      "css_viewport": [
+        1150,
+        530
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        1590
+      ],
+      "sha256": "f69d3dd9017fb80711d8f30469b0b90d98fd1db7ccef44b2c4e12b50b86f3d12"
+    },
+    {
+      "file": "04-search-1-t.png",
+      "css_viewport": [
+        1150,
+        530
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        1590
+      ],
+      "sha256": "d07f31d3c3ac1efc2a0fd3534458f1ee67e24c5c8ebdbe64cb71cb2cf0607f8e"
+    },
+    {
+      "file": "04-search-2-tr.png",
+      "css_viewport": [
+        1150,
+        530
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        1590
+      ],
+      "sha256": "9b168932b79cc31a83f56ba6b6eea3f104f758b2f4b8e52411c9da3e70993a69"
+    },
+    {
+      "file": "04-search-3-tra.png",
+      "css_viewport": [
+        1150,
+        530
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        1590
+      ],
+      "sha256": "c9b3385d0ad1f76878166938b89ec4a5fdb1467835474b130eb3e45892a29cf7"
+    },
+    {
+      "file": "04-search-4-trai.png",
+      "css_viewport": [
+        1150,
+        530
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        1590
+      ],
+      "sha256": "cfb42ca9863c0f149f0547c019e5d531224f3fa092310881d3e313f1429e4455"
+    },
+    {
+      "file": "04-search-5-train.png",
+      "css_viewport": [
+        1150,
+        530
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        1590
+      ],
+      "sha256": "6f4bfca24ebaab4fb9be18fde04df951169eb1712828e2889f1b64a7beae2fb1"
+    },
+    {
+      "file": "05-search-result.png",
+      "css_viewport": [
+        1150,
+        530
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        1590
+      ],
+      "sha256": "41f1be9dfd7a1dcd49cd6cd85a086619679e7aa05645adf2a7d55fe7165fc930",
+      "note": "Enter submitted the search; the backend returned one item"
+    },
+    {
+      "file": "05-search-result-close.png",
+      "css_viewport": [
+        1150,
+        530
+      ],
+      "device_scale_factor": 5,
+      "clip_css": null,
+      "pixels": [
+        5750,
+        2650
+      ],
+      "sha256": "02d0a752b150e786042d84883755d50b5e5481dff3fec0067ee1a1731dc459ad"
+    },
+    {
+      "file": "06-details.png",
+      "css_viewport": [
+        1150,
+        971
+      ],
+      "device_scale_factor": 5,
+      "clip_css": null,
+      "pixels": [
+        5750,
+        4855
+      ],
+      "sha256": "19e4ed28a2608459770ba0b559f26a5149a46af64609c345fd8e23a4df55f795",
+      "note": "Details and Recent openings in one sheet; window grown so the sheet does not scroll"
+    },
+    {
+      "file": "08-edit-tags-0-empty.png",
+      "css_viewport": [
+        1150,
+        747
+      ],
+      "device_scale_factor": 5,
+      "clip_css": null,
+      "pixels": [
+        5750,
+        3735
+      ],
+      "sha256": "12bd57a873bf2a3dd6d4f570a35d3ad920a894f552c53d48b7f814d952c24e6f",
+      "note": "Unsaved preview; Save changes is never pressed"
+    },
+    {
+      "file": "08-edit-tags-1-miniatures.png",
+      "css_viewport": [
+        1150,
+        747
+      ],
+      "device_scale_factor": 5,
+      "clip_css": null,
+      "pixels": [
+        5750,
+        3735
+      ],
+      "sha256": "77d205e34c11922f47f0a52a383bc84596ab01fcd4f7f76c76b01edf29b5b416",
+      "note": "Unsaved preview; Save changes is never pressed"
+    },
+    {
+      "file": "08-edit-tags-2-night-train.png",
+      "css_viewport": [
+        1150,
+        747
+      ],
+      "device_scale_factor": 5,
+      "clip_css": null,
+      "pixels": [
+        5750,
+        3735
+      ],
+      "sha256": "91db33e7935480f3d1370b77f0773bad3768df725dbfab9b3a956afb8e318e59",
+      "note": "Unsaved preview; Save changes is never pressed"
+    },
+    {
+      "file": "01-sources-0.png",
+      "css_viewport": [
+        1150,
+        700
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        2100
+      ],
+      "sha256": "6cd86d7ee41419de68593fb7f6b07b94c2d444feb391009ff45ca4e13dbf6939"
+    },
+    {
+      "file": "01-sources-1.png",
+      "css_viewport": [
+        1150,
+        700
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        2100
+      ],
+      "sha256": "be816f7a613ac8c4d6575085c0860336772aa4761f08679e08efadf2ee7da600"
+    },
+    {
+      "file": "01-sources-2.png",
+      "css_viewport": [
+        1150,
+        700
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        2100
+      ],
+      "sha256": "56a3557c1b06d6b52a56aded773109afbde8959413d6cdf84ef5f24443aac2c4"
+    },
+    {
+      "file": "02-confirmation.png",
+      "css_viewport": [
+        1150,
+        700
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        2100
+      ],
+      "sha256": "e67bf776518fec45f01589aea74ebe1def27232b9818fc445e7ebfc77e60216d",
+      "note": "Dialog cancelled; collection came from the omoi collect CLI run"
+    },
+    {
+      "file": "09-appearance.png",
+      "css_viewport": [
+        1150,
+        700
+      ],
+      "device_scale_factor": 3,
+      "clip_css": [
+        218,
+        0,
+        932,
+        393
+      ],
+      "pixels": [
+        2796,
+        1179
+      ],
+      "sha256": "1582474f36b254d035d2cae26f50f6dce883dbfa727a46145a025b8bd0e034cc",
+      "note": "Clipped above the Catalogue section"
+    },
+    {
+      "file": "09-appearance-confluence.png",
+      "css_viewport": [
+        1150,
+        700
+      ],
+      "device_scale_factor": 3,
+      "clip_css": [
+        218,
+        0,
+        932,
+        386
+      ],
+      "pixels": [
+        2796,
+        1158
+      ],
+      "sha256": "c9ab4a914ff9204fc82413327fba0bc7f5e37b4087f9e34b9f2154d3b1ee8008",
+      "note": "After clicking the Confluence theme; clipped above the Catalogue section"
+    },
+    {
+      "file": "10-confluence.png",
+      "css_viewport": [
+        1150,
+        1333
+      ],
+      "device_scale_factor": 3,
+      "clip_css": null,
+      "pixels": [
+        3450,
+        3999
+      ],
+      "sha256": "b636df292df7fbb845ce4d9590b875fb69748ae38ffa84e13db2135b41544a19",
+      "note": "Window grown to the document height; no scrolling"
+    }
+  ]
+}

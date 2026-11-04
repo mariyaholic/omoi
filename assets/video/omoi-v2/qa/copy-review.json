@@ -1,0 +1,20 @@
+{
+  "captions": [
+    "Browse",
+    "Search",
+    "Find",
+    "Inspect",
+    "Check openings",
+    "Tag",
+    "Choose sources",
+    "Switch themes",
+    "Keep browsing"
+  ],
+  "periods_in_authored_captions": false,
+  "captures_unchanged": true,
+  "preserved_labels": [
+    "Unsaved preview",
+    "Synthetic data"
+  ],
+  "evidence_caveat": "Original UI states tab time is an approximation, not measured playback"
+}

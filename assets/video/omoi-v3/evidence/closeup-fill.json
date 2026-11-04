@@ -1,0 +1,11 @@
+{
+  "method": "Stage window at 12.0 s: pixels more than 10 luma levels from the most common level, and the height of the rows holding any such pixel in a 1 percent or denser run.",
+  "v2": {
+    "ink_pixels_percent": 17.16,
+    "occupied_height_percent": 46.3
+  },
+  "v3": {
+    "ink_pixels_percent": 27.87,
+    "occupied_height_percent": 72.7
+  }
+}

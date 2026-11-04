@@ -1,0 +1,259 @@
+{
+  "file": "omoi-v3.mp4",
+  "bytes": 4186870,
+  "sha256": "7a40b946afce3353a3df56e9b316dec4cd6245b6f8e642e1ab32d1ad9c992b67",
+  "video": {
+    "codec_name": "h264",
+    "profile": "High",
+    "width": 1920,
+    "height": 1080,
+    "r_frame_rate": "30/1",
+    "nb_frames": "1200",
+    "duration": "40.000000",
+    "pix_fmt": "yuv420p",
+    "color_space": "bt709",
+    "color_primaries": "bt709",
+    "color_transfer": "bt709",
+    "color_range": "tv",
+    "bit_rate": "635915"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "sample_rate": "48000",
+    "channels": 2,
+    "duration": "40.000000",
+    "bit_rate": "192962",
+    "nb_frames": "1876"
+  },
+  "format": {
+    "duration": "40.000000",
+    "size": "4186870",
+    "bit_rate": "837374"
+  },
+  "format_tags": {
+    "major_brand": "isom",
+    "minor_version": "512",
+    "compatible_brands": "isomiso2avc1mp41"
+  },
+  "decode_return": 0,
+  "decode_errors": "",
+  "loudness_final_file_ffmpeg_ebur128": {
+    "integrated_lufs": -14.1,
+    "lra_lu": 5.9,
+    "true_peak_dbtp": -2.3
+  },
+  "decoded_audio_samples": 1920000,
+  "expected_audio_samples": 1920000,
+  "pyloudnorm_on_decoded_audio_lufs": -14.14,
+  "stereo_minus_mono_lu": 1.4,
+  "first_5ms_peak_db": -62.0,
+  "last_5ms_peak_db": -64.7,
+  "last_500ms_level_db": -38.8,
+  "av_offset_samples_vs_mix_wav": 0,
+  "mix_wav_rate": 48000,
+  "aac_in_mp4_identical_to_encoded_score": true,
+  "limiter": {
+    "trim_db": -3.12,
+    "limit_ceiling_db": -2.65,
+    "max_gain_reduction_db": 7.43,
+    "pct_time_limiting": 12.1
+  },
+  "scene_levels_lufs_scale": {
+    "0-3": -19.2,
+    "3-7": -15.4,
+    "7-8.5": -13.7,
+    "8.5-11": -14.1,
+    "11-13": -16.3,
+    "13-15.5": -15.8,
+    "15.5-18": -14.6,
+    "18-21": -14.6,
+    "21-22.5": -14.1,
+    "22.5-26": -14.5,
+    "26-28.9": -15.1,
+    "28.9-31": -11.7,
+    "31-34.5": -10.5,
+    "34.5-40": -17.3
+  },
+  "cut_response": {
+    "spectral_shift_db_at_hits": {
+      "3": 6.04,
+      "7": 10.43,
+      "8.5": 12.66,
+      "11": 7.7,
+      "13": 16.37,
+      "15.5": 6.68,
+      "18": 6.54,
+      "21": 6.43,
+      "22.5": 3.42,
+      "26": 8.95,
+      "28.9": 8.82,
+      "31": 6.31,
+      "34.5": 12.59
+    },
+    "median_at_hits_db": 7.7,
+    "median_at_noncut_seconds_db": 4.19,
+    "noncut_seconds": 30
+  },
+  "piano_stem_onset_ms_after_hit": {
+    "3": 5,
+    "7": 0,
+    "8.5": 0,
+    "11": 0,
+    "13": -1,
+    "15.5": 4,
+    "18": 2,
+    "21": 2,
+    "22.5": 7,
+    "26": 1,
+    "28.9": -3,
+    "31": -1,
+    "34.5": 0
+  },
+  "hard_cuts_detected_s": [
+    3.0,
+    7.0,
+    11.0,
+    13.0,
+    14.8,
+    18.0,
+    21.0,
+    22.5,
+    26.0
+  ],
+  "mean_luma": {
+    "decoded_frames": 1200,
+    "max_frame_to_frame_change_0_255": 17.55,
+    "at_seconds": 34.533,
+    "frames_over_20_levels": 0,
+    "peak_mean_luma": 232.1
+  },
+  "mean_luma_at_seconds": {
+    "28": 29.4,
+    "28.6": 29.4,
+    "28.9": 89.2,
+    "29.2": 149.3,
+    "30.6": 149.4,
+    "31": 190.4,
+    "31.3": 231.4,
+    "34": 232.0,
+    "34.5": 127.4,
+    "34.8": 23.4,
+    "35": 23.3
+  },
+  "upscale": {
+    "worst_shot": "06-details",
+    "worst_scale": 0.8662,
+    "any_upscale": false,
+    "per_capture": {
+      "01-sources-0": {
+        "device_scale_factor": 3,
+        "scale_min": 0.7053,
+        "scale_max": 0.7053
+      },
+      "01-sources-1": {
+        "device_scale_factor": 3,
+        "scale_min": 0.7053,
+        "scale_max": 0.7053
+      },
+      "01-sources-2": {
+        "device_scale_factor": 3,
+        "scale_min": 0.7053,
+        "scale_max": 0.7053
+      },
+      "02-confirmation": {
+        "device_scale_factor": 3,
+        "scale_min": 0.7053,
+        "scale_max": 0.7053
+      },
+      "03-history": {
+        "device_scale_factor": 3,
+        "scale_min": 0.5375,
+        "scale_max": 0.6459
+      },
+      "04-search-0-empty": {
+        "device_scale_factor": 3,
+        "scale_min": 0.6976,
+        "scale_max": 0.6976
+      },
+      "04-search-1-t": {
+        "device_scale_factor": 3,
+        "scale_min": 0.6976,
+        "scale_max": 0.6976
+      },
+      "04-search-2-tr": {
+        "device_scale_factor": 3,
+        "scale_min": 0.6976,
+        "scale_max": 0.6976
+      },
+      "04-search-3-tra": {
+        "device_scale_factor": 3,
+        "scale_min": 0.6976,
+        "scale_max": 0.6976
+      },
+      "04-search-4-trai": {
+        "device_scale_factor": 3,
+        "scale_min": 0.6976,
+        "scale_max": 0.6976
+      },
+      "04-search-5-train": {
+        "device_scale_factor": 3,
+        "scale_min": 0.5448,
+        "scale_max": 0.6976
+      },
+      "05-search-result": {
+        "device_scale_factor": 3,
+        "scale_min": 0.5448,
+        "scale_max": 0.6976
+      },
+      "05-search-result-close": {
+        "device_scale_factor": 5,
+        "scale_min": 0.8209,
+        "scale_max": 0.8479
+      },
+      "06-details": {
+        "device_scale_factor": 5,
+        "scale_min": 0.5653,
+        "scale_max": 0.8662
+      },
+      "08-edit-tags-0-empty": {
+        "device_scale_factor": 5,
+        "scale_min": 0.8662,
+        "scale_max": 0.8662
+      },
+      "08-edit-tags-1-miniatures": {
+        "device_scale_factor": 5,
+        "scale_min": 0.8662,
+        "scale_max": 0.8662
+      },
+      "08-edit-tags-2-night-train": {
+        "device_scale_factor": 5,
+        "scale_min": 0.8662,
+        "scale_max": 0.8662
+      },
+      "09-appearance": {
+        "device_scale_factor": 3,
+        "scale_min": 0.6459,
+        "scale_max": 0.6459
+      },
+      "09-appearance-confluence": {
+        "device_scale_factor": 3,
+        "scale_min": 0.6459,
+        "scale_max": 0.6459
+      },
+      "10-confluence": {
+        "device_scale_factor": 3,
+        "scale_min": 0.5235,
+        "scale_max": 0.5235
+      }
+    }
+  },
+  "capture": {
+    "shots": 20,
+    "sha256_match_provenance": true,
+    "catalogue_items": 8,
+    "browser_openings": 8,
+    "tags_in_catalogue_after_capture": 0,
+    "editor_saved": false,
+    "external_requests": []
+  }
+}

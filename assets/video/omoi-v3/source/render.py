@@ -146,7 +146,7 @@ def world(t, ending=False):
         pixel_text(im, (320, 26), 'omoi', 57, 'paper', 'center')
         if t >= .8:
             pixel_text(im, (320, 96), 'Local watch history for the PC', 20, 'ink', 'center')
-        pixel_text(im, (320, 324), 'APP CAPTURE / SYNTHETIC DATA', 11, 'light', 'center')
+        pixel_text(im, (320, 324), 'v0.1.0', 11, 'light', 'center')
     else:
         pixel_text(im, (38, 32), 'OMOI', 12, 'pink')
         pixel_text(im, (38, 96), 'Find it again', 29, 'paper')
@@ -163,8 +163,7 @@ def stage(title, unsaved=False, light=False):
     pixel_text(im, (22, 39), title, 22, ink)
     d.rectangle((15, 76, 624, 329), outline=P[edge])
     d.rectangle((17, 78, 622, 327), outline=P['mid'])
-    pixel_text(im, (22, 341), 'APP CAPTURE', 9, 'mid' if light else 'light')
-    pixel_text(im, (618, 341), 'SYNTHETIC DATA', 9, 'mid' if light else 'light', 'right')
+    pixel_text(im, (22, 341), 'v0.1.0', 9, 'mid' if light else 'light')
     return im.resize((W, H), Image.Resampling.NEAREST)
 
 

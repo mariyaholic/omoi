@@ -2,6 +2,9 @@
 
 Current implementation status: see [PROGRESS.md](PROGRESS.md). The partial-U1 status below is historical.
 
+Current assignment: [cloud handoff](CLOUD_HANDOFF.md) for reducing installation
+friction. It supersedes the historical foundation work order below for this task.
+
 Prepared by Ava.tower, 2026-10-24 (Asia/Manila). The free models hit their usage limits, so this is a partial M0 handed over for you to continue locally.
 
 > **Update 2026-11-03 (codex.scout):** For the current repository location, implementation order, acceptance gates, and handoff to Astra, start with [IMPLEMENTATION.md](IMPLEMENTATION.md). The Q3/Q6/Q7/Q8 decisions below were answered on 2026-10-25; the old questions at the end of prior versions are superseded. Toolchain locations and versions in older notes are historical, not proof of the current environment.

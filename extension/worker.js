@@ -2,7 +2,7 @@
 importScripts('queue.js');
 const HOST='org.omoi.capture_dev';
 const sites=chrome.runtime.getManifest().optional_host_permissions;
-let port=null,inflight=null,portTimer=null,chain=Promise.resolve(),pending=0,helloAt=0,lastError='';
+let port=null,inflight=null,portTimer=null,chain=Promise.resolve(),pending=0,helloAt=0,lastError='',retryAllowed=true;
 chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'});
 async function load(){const {capture}=await chrome.storage.local.get('capture');return capture||{enabled:false,binding:null,generation:0,queue:[],dropped:0};}
 async function save(s){await chrome.storage.local.set({capture:s});}
@@ -26,8 +26,8 @@ async function negotiate(s){
   if(port&&Date.now()-helloAt<15000)return true;
   const permission=await chrome.permissions.contains({origins:sites});
   const reply=await exchange({type:'hello',protocol_min:1,protocol_max:1,version:'0.2.0',permission,binding:s.binding});
-  if(!reply.ok){lastError=reply.error;helloAt=0;return false;}
-  OmoiQueue.epoch(s,reply.binding,reply.generation);await save(s);helloAt=Date.now();lastError='';return true;
+  if(!reply.ok){lastError=reply.error;helloAt=0;retryAllowed=reply.retry!==false;return false;}
+  OmoiQueue.epoch(s,reply.binding,reply.generation);await save(s);helloAt=Date.now();lastError='';retryAllowed=true;return true;
 }
 async function flush(s){
   if(!s.queue.length)return;
@@ -37,13 +37,13 @@ async function flush(s){
     const head=s.queue[0];
     if(head.binding!==s.binding||head.generation!==s.generation)break;
     const reply=await exchange({type:'event',...head});
-    if(!reply.ok){lastError=reply.error;helloAt=0;if(reply.drop){OmoiQueue.acknowledge(s,head.event.event_id);s.dropped++;await save(s);continue;}break;}
+    if(!reply.ok){lastError=reply.error;helloAt=0;if(reply.drop){OmoiQueue.acknowledge(s,head.event.event_id);s.dropped++;await save(s);continue;}retryAllowed=reply.retry!==false;break;}
     OmoiQueue.acknowledge(s,head.event.event_id);await save(s);
   }
   } finally {
     // A retry alarm is one-shot. A rejected hello must schedule another even
     // when it returns normally rather than throwing or accepting an event.
-    if(s.enabled&&s.queue.length)await chrome.alarms.create('retry',{delayInMinutes:1});
+    if(s.enabled&&s.queue.length&&retryAllowed)await chrome.alarms.create('retry',{delayInMinutes:1});
   }
 }
 function trustedContent(sender){try{const u=new URL(sender.url);return sender.id===chrome.runtime.id&&sender.frameId===0&&sites.some(s=>s===`${u.origin}/*`);}catch{return false;}}

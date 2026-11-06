@@ -79,6 +79,11 @@ enum Schedule {
 enum Database {
     Migrate,
     Info,
+    /// After backing up, select the historical offset for legacy Twitch queue dates.
+    MigratePlayback {
+        #[arg(long, allow_hyphen_values = true)]
+        utc_offset: String,
+    },
 }
 pub fn run() -> u8 {
     run_from(std::env::args_os())
@@ -222,6 +227,25 @@ fn execute(cli: Cli) -> Result<u8> {
         } => {
             let c = crate::db::open(&paths.db, &config, false)?;
             output(&crate::db::info(&c)?)?;
+        }
+        Commands::Db {
+            command: Database::MigratePlayback { utc_offset },
+        } => {
+            let migration = Config {
+                local_utc_offset: utc_offset,
+                ..Config::default()
+            };
+            let offset = migration.offset_seconds()?;
+            let mut c = crate::db::open(&paths.db, &config, false)?;
+            if crate::db::info(&c)?.user_version != crate::db::schema::VERSION {
+                return Err(Error::Schema(
+                    "Migrate catalogue schema before playback timezone migration".into(),
+                ));
+            }
+            let count = crate::sessionize::migrate_legacy_live(&mut c, offset)?;
+            output(
+                &serde_json::json!({"migrated_legacy_playback_events":count,"utc_offset":migration.local_utc_offset}),
+            )?;
         }
         Commands::Export { json, out, .. } => {
             let c = crate::db::open(&paths.db, &config, false)?;

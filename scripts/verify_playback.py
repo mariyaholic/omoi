@@ -131,6 +131,53 @@ def main():
                 with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
                     rows = conn.execute("SELECT i.external_id,s.played_s FROM sessions s JOIN items i ON i.id=s.item_id WHERE i.platform='twitch' AND i.external_id LIKE ?", (f'live:fixture_{int(batched)}:%',)).fetchall()
                     assert len(rows) == 1 and rows[0][1] == 40, ('regressing stop split Twitch session', batched, rows)
+            # Exercise deletion after enqueue but before processing at midnight.
+            first_live = first | dict(event_id='delete-live-0', producer_id='delete-live', seq=0,
+                                      url='https://www.twitch.tv/delete_fixture', at_ms=midnight-1000)
+            assert post(first_live) == 200
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            assert post(first_live | dict(event_id='delete-live-1', seq=1, at_ms=midnight+1000, position_ms=2000, cumulative_played_ms=2000)) == 200
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                conn.execute('PRAGMA foreign_keys=ON')
+                item = conn.execute("SELECT id,external_id FROM items WHERE platform='twitch' AND external_id LIKE 'live:delete_fixture:%'").fetchone()
+                conn.execute("INSERT INTO deleted_items(platform,external_id,through) VALUES('twitch',?,?)", (item[1], int(time.time())))
+                conn.execute('DELETE FROM items WHERE id=?', (item[0],))
+                conn.commit()
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                assert conn.execute("SELECT count(*) FROM items WHERE external_id LIKE 'live:delete_fixture:%'").fetchone() == (0,)
+
+            # Old raw bodies did not record their timezone. Refuse ambiguous
+            # dates without modifying bytes, then use explicit owner migration.
+            legacy = first | dict(event_id='legacy-0', producer_id='legacy', seq=0,
+                                  url='https://www.twitch.tv/legacy_fixture', at_ms=midnight-2000,
+                                  cumulative_played_ms=1000, state='stopped')
+            assert post(legacy) == 200
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                identity = conn.execute("SELECT external_id FROM items WHERE external_id LIKE 'live:legacy_fixture:%'").fetchone()[0]
+                for seq, offset, counter in ((1, -1000, 900), (2, 1000, 3000)):
+                    event = legacy | dict(event_id=f'legacy-{seq}', seq=seq, at_ms=midnight+offset, cumulative_played_ms=counter, state='playing')
+                    body = json.dumps(dict(event=event, key=dict(platform='twitch', external_id=identity)))
+                    conn.execute("INSERT INTO raw_events(at,source,body) VALUES(?,'userscript',?)", (event['at_ms'], body))
+                    conn.execute('INSERT INTO playback_receipts VALUES(?,?,?)', (event['event_id'], 'legacy', seq))
+                conn.commit()
+                before = conn.execute('SELECT id,body FROM raw_events ORDER BY id').fetchall()
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode != 0 and 'Legacy Twitch queue' in completed.stderr, completed.stderr
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                assert conn.execute('SELECT id,body FROM raw_events ORDER BY id').fetchall() == before
+            completed = subprocess.run([binary, 'db', 'migrate-playback', '--utc-offset', '+08:00'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            assert json.loads(completed.stdout)['migrated_legacy_playback_events'] == 2
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                assert conn.execute("SELECT count(*) FROM items WHERE external_id LIKE 'live:legacy_fixture:%'").fetchone() == (2,)
+
             if os.name == 'nt':
                 from ctypes import wintypes
                 from measure import Memory
@@ -204,7 +251,7 @@ def main():
     budgets={}
     if resources:
         budgets['listener_peak_at_most_10mb']=max(resources['peak_working_set_bytes'],resources.get('full_inbox',{}).get('lifetime_peak_bytes',0),resources.get('sustained',{}).get('lifetime_peak_bytes',0))<=10000000
-    checks=['listener auth','hostile requests','restart','duplicate replay','collection','metadata','port collision','Twitch regressing stop across midnight, immediate and batched processing']
+    checks=['listener auth','hostile requests','restart','duplicate replay','collection','metadata','port collision','Twitch regressing stop across midnight, immediate and batched processing','pending Twitch deletion after midnight','explicit legacy queue timezone migration']
     if args.stress_inbox:
         checks.append('20 MB inbox eviction cap')
     if args.duration:

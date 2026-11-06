@@ -12,7 +12,7 @@ function workerFixture(storage={}){
   const callbacks={};return {onMessage:{addListener:fn=>callbacks.message=fn},onDisconnect:{addListener:fn=>callbacks.disconnect=fn},disconnect:()=>callbacks.disconnect?.(),postMessage:m=>{
     wire.push(structuredClone(m));queueMicrotask(()=>{
      if(!online){callbacks.disconnect();return;}
-     if(m.type==='hello'){callbacks.message(helloFail?{ok:false,error:'App temporarily unavailable',retryable:true}:m.permission?{ok:true,binding:'fixture-home',generation}:{ok:false,error:'Permission needed'});return;}
+     if(m.type==='hello'){callbacks.message(helloFail?{ok:false,error:'App unavailable',retry:helloFail!=='permanent'}:m.permission?{ok:true,binding:'fixture-home',generation}:{ok:false,error:'Permission needed',retry:false});return;}
      if(m.type==='status'){callbacks.message({ok:true,binding:'fixture-home',generation});return;}
      if(m.type==='event'){if(eventsFail){callbacks.disconnect();return;}if(m.generation!==generation){callbacks.message({ok:false,error:'Reconnect'});return;}commits.add(m.event.event_id);callbacks.message({ok:true});}
     });
@@ -32,6 +32,12 @@ test('actual retry alarm survives rejected hello and drains without new tab acti
   await f.alarm();assert.equal(storage.capture.queue.length,1);assert.ok(f.alarms.has('retry'),'rejected hello must leave a future retry');
  }
  f.helloFail(false);await f.alarm();assert.equal(storage.capture.queue.length,0);assert.equal(f.commits.size,1);assert.equal(f.alarms.size,0);
+});
+
+test('permanent native rejection retains queue without endless alarms and explicit reconnect resumes',async()=>{
+ const storage={capture:{enabled:true,binding:'fixture-home',generation:1,dropped:0,queue:[{binding:'fixture-home',generation:1,event:{event_id:'pending:1',seq:1}}]}},f=workerFixture(storage);
+ f.helloFail('permanent');await f.alarm();assert.equal(storage.capture.queue.length,1);assert.equal(f.alarms.size,0);
+ f.helloFail(false);await f.send({type:'connect'},f.popup);assert.equal(storage.capture.queue.length,0);assert.equal(f.commits.size,1);
 });
 test('actual worker serializes concurrent tabs and restores durable queue after suspension',async()=>{
  const storage={},f=workerFixture(storage);const ready=await f.send({type:'connect'},f.popup);assert.equal(ready.enabled,true);

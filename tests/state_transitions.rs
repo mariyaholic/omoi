@@ -286,3 +286,147 @@ fn pending_playback_cannot_resurrect_a_deleted_item() {
         0
     );
 }
+
+#[test]
+fn pending_live_continuation_cannot_resurrect_after_midnight_deletion() {
+    let mut c = database();
+    let midnight = 1_700_006_400_000i64;
+    let mut first = event(0, midnight - 10000, 0);
+    first["url"] = json!("https://www.twitch.tv/maria");
+    sessionize::enqueue(&mut c, &first.to_string(), 28800).unwrap();
+    process(&mut c);
+    let mut next = event(1, midnight + 10000, 20000);
+    next["url"] = json!("https://www.twitch.tv/maria");
+    sessionize::enqueue(&mut c, &next.to_string(), 28800).unwrap();
+    assert!(ui::delete_item(&mut c, 1).unwrap());
+    process(&mut c);
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM raw_events", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn legacy_poisoned_live_queue_requires_explicit_timezone_before_rekeying() {
+    for offset in [0, 28800, -18000] {
+        let mut c = database();
+        let midnight = 1_700_092_800_000i64 - i64::from(offset) * 1000;
+        let mut stopped = event(0, midnight - 2000, 1000);
+        stopped["url"] = json!("https://www.twitch.tv/maria");
+        stopped["state"] = json!("stopped");
+        sessionize::enqueue(&mut c, &stopped.to_string(), offset).unwrap();
+        process(&mut c);
+        let yesterday: String = c
+            .query_row("SELECT external_id FROM items", [], |r| r.get(0))
+            .unwrap();
+        // Seed bodies exactly in the old Stored shape, pinned by old enqueue.
+        for (seq, at, counter) in [(1, midnight - 1000, 900), (2, midnight + 1000, 3000)] {
+            let mut e = event(seq, at, counter);
+            e["url"] = json!("https://www.twitch.tv/maria");
+            let body =
+                json!({"event":e,"key":{"platform":"twitch","external_id":yesterday}}).to_string();
+            c.execute(
+                "INSERT INTO raw_events(at,source,body) VALUES(?1,'userscript',?2)",
+                rusqlite::params![at, body],
+            )
+            .unwrap();
+            c.execute(
+                "INSERT INTO playback_receipts VALUES(?1,'producer',?2)",
+                rusqlite::params![format!("event-{seq}"), seq],
+            )
+            .unwrap();
+        }
+        let before: String = c
+            .query_row("SELECT group_concat(body) FROM raw_events", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        {
+            let tx = c.transaction().unwrap();
+            let error = sessionize::run(&tx).unwrap_err().to_string();
+            assert!(error.contains("Legacy Twitch queue"), "{error}");
+        }
+        assert_eq!(
+            c.query_row("SELECT group_concat(body) FROM raw_events", [], |r| r
+                .get::<_, String>(0))
+                .unwrap(),
+            before
+        );
+        assert_eq!(sessionize::migrate_legacy_live(&mut c, offset).unwrap(), 2);
+        assert_eq!(sessionize::migrate_legacy_live(&mut c, offset).unwrap(), 0);
+        process(&mut c);
+        assert_eq!(
+            c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            2
+        );
+        let current: String = c
+            .query_row(
+                "SELECT external_id FROM items ORDER BY id DESC LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_ne!(current, yesterday);
+        assert_eq!(
+            c.query_row("SELECT count(*) FROM playback_receipts", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            3
+        );
+    }
+}
+
+#[test]
+fn legacy_timezone_migration_retains_deletion_identity_and_rolls_back_errors() {
+    let mut c = database();
+    let midnight = 1_700_092_800_000i64;
+    let mut first = event(0, midnight - 1000, 0);
+    first["url"] = json!("https://www.twitch.tv/maria");
+    sessionize::enqueue(&mut c, &first.to_string(), 0).unwrap();
+    process(&mut c);
+    let key: String = c
+        .query_row("SELECT external_id FROM items", [], |r| r.get(0))
+        .unwrap();
+    let mut e = event(1, midnight + 1000, 2000);
+    e["url"] = json!("https://www.twitch.tv/maria");
+    let body = json!({"event":e,"key":{"platform":"twitch","external_id":key}}).to_string();
+    c.execute(
+        "INSERT INTO raw_events(at,source,body) VALUES(?1,'userscript',?2)",
+        rusqlite::params![midnight + 1000, body],
+    )
+    .unwrap();
+    c.execute(
+        "INSERT INTO raw_events(at,source,body) VALUES(0,'fixture','broken')",
+        [],
+    )
+    .unwrap();
+    assert!(sessionize::migrate_legacy_live(&mut c, 0).is_err());
+    assert_eq!(
+        c.query_row(
+            "SELECT body FROM raw_events WHERE source='userscript'",
+            [],
+            |r| r.get::<_, String>(0)
+        )
+        .unwrap(),
+        body
+    );
+    c.execute("DELETE FROM raw_events WHERE source='fixture'", [])
+        .unwrap();
+    assert!(sessionize::migrate_legacy_live(&mut c, 100000).is_err());
+    assert_eq!(sessionize::migrate_legacy_live(&mut c, 0).unwrap(), 1);
+    ui::delete_item(&mut c, 1).unwrap();
+    process(&mut c);
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+}

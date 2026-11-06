@@ -287,10 +287,11 @@ def main():
                 page.get_by_role('button', name='Cancel', exact=True).click()
                 expect(page.locator('#confirmation')).not_to_be_visible()
                 page.locator('nav [data-page="settings"]').click()
-                page.get_by_role('button', name='Check playback inbox', exact=True).click()
-                expect(page.locator('#playback-output')).to_contain_text('0 events pending')
-                page.get_by_role('button', name='Process playback', exact=True).click()
-                expect(page.locator('#playback-output')).to_contain_text('0 events processed')
+                expect(page.locator('#capture-status')).to_contain_text('no_event_yet')
+                page.get_by_role('button', name='Enable capture', exact=True).click()
+                expect(page.locator('#capture-status')).to_contain_text('Transport: ready')
+                page.get_by_role('button', name='Stop capture', exact=True).click()
+                expect(page.locator('#capture-status')).to_contain_text('Transport: stopped')
                 page.evaluate('window.showSaveFilePicker=undefined')
                 with page.expect_download(timeout=60000) as downloaded:
                     page.get_by_role('button', name='Export JSON', exact=True).click()
@@ -375,7 +376,7 @@ def main():
                       "api_ms_median": statistics.median(latency), "api_ms_max": max(latency),
                       "warm_history_click_to_rows_ms_median": statistics.median(warm), "warm_history_click_to_rows_ms_max": max(warm),
                       "resources": resources, "javascript_errors": errors, "external_requests": external,
-                      "checks": ["metadata and tag editing", "dialog keyboard containment and focus restoration", "scheduler confirmation cancellation", "playback inbox processing", "JSON download", "empty catalogue", "selected-profile collection excludes unchecked profile", "10k item pagination", "FTS/literal search", "HTML escaping", "delete cancel/confirm/FTS cascade", "all screens and details in five themes", "appearance persistence", "token removed from URL", "unauthenticated and foreign Host/Origin rejection", "duplicate/oversized/chunked request rejection", "port collision", "idle shutdown"]}
+                      "checks": ["metadata and tag editing", "dialog keyboard containment and focus restoration", "scheduler confirmation cancellation", "guided capture start/stop without false recording readiness", "JSON download", "empty catalogue", "selected-profile collection excludes unchecked profile", "10k item pagination", "FTS/literal search", "HTML escaping", "delete cancel/confirm/FTS cascade", "all screens and details in five themes", "appearance persistence", "token removed from URL", "unauthenticated and foreign Host/Origin rejection", "duplicate/oversized/chunked request rejection", "port collision", "idle shutdown"]}
         finally:
             proc.terminate()
             proc.wait(timeout=10)

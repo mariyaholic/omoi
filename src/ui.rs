@@ -136,13 +136,6 @@ pub(crate) struct Request {
     pub headers: BTreeMap<String, String>,
     pub body: Vec<u8>,
 }
-pub(crate) fn request(
-    stream: &mut TcpStream,
-    max_header: usize,
-    max_body: usize,
-) -> std::io::Result<Request> {
-    request_cancellable(stream, max_header, max_body, None)
-}
 fn read_request(
     stream: &mut TcpStream,
     buffer: &mut [u8],
@@ -169,7 +162,7 @@ fn read_request(
         }
     }
 }
-fn request_cancellable(
+pub(crate) fn request_cancellable(
     stream: &mut TcpStream,
     max_header: usize,
     max_body: usize,
@@ -313,7 +306,13 @@ fn number(q: &BTreeMap<String, String>, key: &str, default: i64) -> Result<i64> 
         .unwrap_or(Ok(default))
 }
 
-fn api(req: &Request, paths: &Paths, env: &PathEnvironment, idle_seconds: u64) -> Result<Value> {
+fn api(
+    req: &Request,
+    paths: &Paths,
+    env: &PathEnvironment,
+    idle_seconds: u64,
+    capture: &mut CaptureRuntime,
+) -> Result<Value> {
     let config = Config::load(&paths.config)?;
     let url = url::Url::parse(&format!("http://127.0.0.1{}", req.target))
         .map_err(|_| Error::Config("invalid URL".into()))?;
@@ -323,6 +322,24 @@ fn api(req: &Request, paths: &Paths, env: &PathEnvironment, idle_seconds: u64) -
         .collect::<BTreeMap<_, _>>();
     let c = crate::db::open(&paths.db, &config, false)?;
     match (req.method.as_str(), url.path()) {
+        ("GET", "/api/setup") => setup_status(&c, capture),
+        ("POST", "/api/setup") => {
+            let change = serde_json::from_slice(&req.body)
+                .map_err(|_| Error::Config("Invalid setup change".into()))?;
+            let mut writer = crate::db::open(&paths.db, &config, true)?;
+            crate::setup::change(&mut writer, change)?;
+            capture.reconcile(paths, &writer)?;
+            setup_status(&writer, capture)
+        }
+        ("POST", "/api/setup/token") => {
+            if crate::setup::Setup::load(&c)?.choice != crate::setup::Choice::Enabled {
+                return Err(Error::Config("Enable capture first".into()));
+            }
+            Ok(json!({"token":crate::listener::token(&paths.home)?,"port":config.listener_port}))
+        }
+        ("GET", "/api/setup/script") => {
+            Ok(json!({"name":"omoi.user.js","content":include_str!("../userscripts/omoi.user.js")}))
+        }
         ("POST", "/api/edit") => {
             let body: Value = serde_json::from_slice(&req.body)
                 .map_err(|_| Error::Config("Invalid metadata".into()))?;
@@ -347,6 +364,36 @@ fn api(req: &Request, paths: &Paths, env: &PathEnvironment, idle_seconds: u64) -
                 .as_str()
                 .filter(|s| ["install", "remove", "status"].contains(s))
                 .ok_or_else(|| Error::Config("Invalid scheduling action".into()))?;
+            if action == "install" {
+                let profiles: Vec<String> = serde_json::from_value(body["profiles"].clone())
+                    .map_err(|_| {
+                        Error::Config("Select profiles before enabling automatic collection".into())
+                    })?;
+                if profiles.is_empty() {
+                    return Err(Error::Config("Select at least one profile".into()));
+                }
+                let discovered = crate::readers::discover::discover(&config, env)?;
+                if profiles
+                    .iter()
+                    .any(|id| !discovered.profiles.iter().any(|p| &p.source.0 == id))
+                {
+                    return Err(Error::Config(
+                        "Profile selection changed. Refresh Sources.".into(),
+                    ));
+                }
+                let mut writer = crate::db::open(&paths.db, &config, true)?;
+                let current = crate::setup::Setup::load(&writer)?;
+                crate::setup::change(
+                    &mut writer,
+                    crate::setup::Change {
+                        generation: current.generation,
+                        choice: None,
+                        step: None,
+                        background: None,
+                        profiles: Some(profiles),
+                    },
+                )?;
+            }
             Ok(json!({"output":crate::scheduler::result(action,&paths.home)?}))
         }
         ("GET", "/api/info") => {
@@ -380,7 +427,7 @@ fn api(req: &Request, paths: &Paths, env: &PathEnvironment, idle_seconds: u64) -
         ("GET", "/api/sources") => {
             let d = crate::readers::discover::discover(&config, env)?;
             Ok(
-                json!({"profiles":d.profiles.iter().map(|p|json!({"id":p.source.0,"browser":p.browser,"name":p.name})).collect::<Vec<_>>(),"excluded":d.excluded,"warnings":d.warnings,"failures":d.failures}),
+                json!({"profiles":d.profiles.iter().map(|p|json!({"id":p.source.0,"browser":p.browser,"name":p.name})).collect::<Vec<_>>(),"excluded":d.excluded,"warnings":d.warnings,"failures":d.failures,"selected":crate::setup::Setup::load(&c)?.profiles}),
             )
         }
         ("POST", "/api/delete") => {
@@ -511,6 +558,9 @@ fn serve_inner(
     let config = Config::load(&paths.config)?;
     let mut conn = crate::db::open(&paths.db, &config, true)?;
     crate::db::migrate(&mut conn)?;
+    let _app = crate::setup::app_lock(&paths.home)?;
+    let mut capture = CaptureRuntime::default();
+    capture.reconcile(&paths, &conn)?;
     drop(conn);
     let launch_url = format!("http://{host}/#token={token}");
     if let Some(control) = &desktop {
@@ -560,7 +610,11 @@ fn serve_inner(
         }
         let ready=pending.iter().position(|(stream,at)|at.elapsed()>Duration::from_secs(2)||!matches!(stream.peek(&mut [0u8;1]),Err(e) if e.kind()==std::io::ErrorKind::WouldBlock));
         let Some(index) = ready else {
-            std::thread::sleep(Duration::from_millis(10));
+            std::thread::sleep(Duration::from_millis(if pending.is_empty() {
+                100
+            } else {
+                10
+            }));
             continue;
         };
         let (mut stream, at) = pending.swap_remove(index);
@@ -637,7 +691,7 @@ fn serve_inner(
                 active = Instant::now();
                 continue;
             }
-            match api(&req, &paths, &env, idle_seconds) {
+            match api(&req, &paths, &env, idle_seconds, &mut capture) {
                 Ok(v) => {
                     let _ = json_response(&mut stream, 200, v);
                 }
@@ -718,4 +772,57 @@ fn download(stream: &mut TcpStream, paths: &Paths, json: bool) -> Result<()> {
         write_until(stream, &buffer[..count], deadline).map_err(io)?;
     }
     Ok(())
+}
+
+#[derive(Default)]
+struct CaptureRuntime {
+    owned: Option<crate::listener::Managed>,
+    error: Option<String>,
+}
+impl CaptureRuntime {
+    fn reconcile(&mut self, paths: &Paths, c: &Connection) -> Result<()> {
+        if crate::setup::Setup::load(c)?.choice != crate::setup::Choice::Enabled {
+            self.owned.take();
+            self.error = None;
+            return Ok(());
+        }
+        if self.owned.is_none() {
+            match crate::listener::Managed::start(paths.clone()) {
+                Ok(service)=>{self.owned=Some(service);self.error=None;}
+                Err(Error::Io{source,..}) if source.kind()==std::io::ErrorKind::AddrInUse => self.error=Some("collision: close the other listener yourself, then Retry. No process was stopped.".into()),
+                Err(_)=>self.error=Some("failed: check catalogue permissions and listener configuration, then Retry.".into()),
+            }
+        }
+        Ok(())
+    }
+}
+fn setup_status(c: &Connection, capture: &CaptureRuntime) -> Result<Value> {
+    let s = crate::setup::Setup::load(c)?;
+    let pending: i64 = c.query_row("SELECT count(*) FROM raw_events", [], |r| r.get(0))?;
+    let transport = capture
+        .owned
+        .as_ref()
+        .map(|m| m.state.lock().unwrap().clone())
+        .unwrap_or_else(|| {
+            if capture.error.is_some() {
+                "collision_or_failed"
+            } else {
+                "stopped"
+            }
+            .into()
+        });
+    let data = if transport == "busy_or_failed" {
+        "busy_or_failed"
+    } else if pending > 0 {
+        "queued"
+    } else if s.last_processed.is_some() {
+        "recorded"
+    } else if s.last_event.is_some() {
+        "receiving"
+    } else {
+        "no_event_yet"
+    };
+    Ok(
+        json!({"client":s.client_state(chrono::Utc::now().timestamp()),"transport":transport,"data":data,"pending":pending,"error":capture.error,"app_version":env!("CARGO_PKG_VERSION"),"protocol":crate::setup::PROTOCOL,"client_version":crate::setup::CLIENT_VERSION,"settings":s}),
+    )
 }

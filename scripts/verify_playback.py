@@ -112,6 +112,85 @@ def main():
                 assert conn.execute('SELECT channel,duration_s FROM items').fetchone() == ('Fixture', 600)
             collision = subprocess.run([binary, 'listen'], env=env, capture_output=True, timeout=15)
             assert collision.returncode != 0
+            # A regressing stop must not change the live identity before the
+            # sessionizer rejects it. Exercise real HTTP ingestion, independent
+            # collector processes, persisted state and the local-day boundary.
+            midnight = 1700064000000  # 2023-11-16 00:00 at default UTC+08.
+            for batched in (False, True):
+                producer = f'twitch-regression-{int(batched)}'
+                for seq, offset, counter, state in [(0, -30000, 0, 'playing'), (1, -10000, 20000, 'playing'), (2, -5000, 10000, 'stopped'), (3, 10000, 40000, 'playing')]:
+                    sample = first | dict(event_id=f'{producer}-{seq}', producer_id=producer, seq=seq,
+                                          url=f'https://www.twitch.tv/fixture_{int(batched)}', at_ms=midnight+offset,
+                                          position_ms=counter, cumulative_played_ms=counter, state=state)
+                    assert post(sample) == 200
+                    if not batched:
+                        completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+                        assert completed.returncode == 0, completed.stderr
+                completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+                assert completed.returncode == 0, completed.stderr
+                with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                    rows = conn.execute("SELECT i.external_id,s.played_s FROM sessions s JOIN items i ON i.id=s.item_id WHERE i.platform='twitch' AND i.external_id LIKE ?", (f'live:fixture_{int(batched)}:%',)).fetchall()
+                    assert len(rows) == 1 and rows[0][1] == 40, ('regressing stop split Twitch session', batched, rows)
+            # Exercise deletion after enqueue but before processing at midnight.
+            first_live = first | dict(event_id='delete-live-0', producer_id='delete-live', seq=0,
+                                      url='https://www.twitch.tv/delete_fixture', at_ms=midnight-1000)
+            assert post(first_live) == 200
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            # A long pre-deletion backlog must keep its tombstoned continuity,
+            # not expire after five minutes merely because suppressed samples
+            # fail to update the durable control state.
+            for seq in range(1, 9):
+                assert post(first_live | dict(event_id=f'delete-live-{seq}', seq=seq, at_ms=midnight-1000+120000*seq, position_ms=120000*seq, cumulative_played_ms=120000*seq)) == 200
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                conn.execute('PRAGMA foreign_keys=ON')
+                item = conn.execute("SELECT id,external_id FROM items WHERE platform='twitch' AND external_id LIKE 'live:delete_fixture:%'").fetchone()
+                conn.execute("INSERT INTO deleted_items(platform,external_id,through) VALUES('twitch',?,?)", (item[1], int(time.time())))
+                conn.execute('DELETE FROM items WHERE id=?', (item[0],))
+                conn.commit()
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                assert conn.execute("SELECT count(*) FROM items WHERE external_id LIKE 'live:delete_fixture:%'").fetchone() == (0,)
+                assert conn.execute("SELECT seq FROM playback_frontier WHERE producer='delete-live'").fetchone() == (8,)
+
+            # Old raw bodies did not record their timezone. Refuse ambiguous
+            # dates without modifying bytes, then use explicit owner migration.
+            legacy = first | dict(event_id='legacy-0', producer_id='legacy', seq=0,
+                                  url='https://www.twitch.tv/legacy_fixture', at_ms=midnight-2000,
+                                  cumulative_played_ms=1000, state='stopped')
+            assert post(legacy) == 200
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                identity = conn.execute("SELECT external_id FROM items WHERE external_id LIKE 'live:legacy_fixture:%'").fetchone()[0]
+                for seq, offset, counter in ((1, -1000, 900), (2, 1000, 3000)):
+                    event = legacy | dict(event_id=f'legacy-{seq}', seq=seq, at_ms=midnight+offset, cumulative_played_ms=counter, state='playing')
+                    body = json.dumps(dict(event=event, key=dict(platform='twitch', external_id=identity)))
+                    conn.execute("INSERT INTO raw_events(at,source,body) VALUES(?,'userscript',?)", (event['at_ms'], body))
+                    conn.execute('INSERT INTO playback_receipts VALUES(?,?,?)', (event['event_id'], 'legacy', seq))
+                conn.commit()
+                before = conn.execute('SELECT id,body FROM raw_events ORDER BY id').fetchall()
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode != 0 and 'Legacy Twitch queue' in completed.stderr, completed.stderr
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                assert conn.execute('SELECT id,body FROM raw_events ORDER BY id').fetchall() == before
+            completed = subprocess.run([binary, 'db', 'migrate-playback', '--utc-offset', '+08:00'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            preview = json.loads(completed.stdout)
+            assert {row['event_id'] for row in preview['rows']} == {'legacy-1', 'legacy-2'}
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                assert conn.execute('SELECT id,body FROM raw_events ORDER BY id').fetchall() == before
+            completed = subprocess.run([binary, 'db', 'migrate-playback', '--utc-offset', '+08:00', '--apply'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode != 0
+            completed = subprocess.run([binary, 'db', 'migrate-playback', '--utc-offset', '+08:00', '--event-id', 'legacy-1', '--event-id', 'legacy-2', '--apply'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            assert json.loads(completed.stdout)['migrated_legacy_playback_events'] == 2
+            completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                assert conn.execute("SELECT count(*) FROM items WHERE external_id LIKE 'live:legacy_fixture:%'").fetchone() == (2,)
+
             if os.name == 'nt':
                 from ctypes import wintypes
                 from measure import Memory
@@ -185,7 +264,7 @@ def main():
     budgets={}
     if resources:
         budgets['listener_peak_at_most_10mb']=max(resources['peak_working_set_bytes'],resources.get('full_inbox',{}).get('lifetime_peak_bytes',0),resources.get('sustained',{}).get('lifetime_peak_bytes',0))<=10000000
-    checks=['listener auth','hostile requests','restart','duplicate replay','collection','metadata','port collision']
+    checks=['listener auth','hostile requests','restart','duplicate replay','collection','metadata','port collision','Twitch regressing stop across midnight, immediate and batched processing','pending Twitch deletion after midnight','explicit legacy queue timezone migration']
     if args.stress_inbox:
         checks.append('20 MB inbox eviction cap')
     if args.duration:

@@ -35,7 +35,7 @@ fn resumable_setup_without_catalogue_migration() {
     assert_eq!(
         c.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))
             .unwrap(),
-        3
+        db::schema::VERSION
     );
     assert_eq!(
         c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))

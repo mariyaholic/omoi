@@ -23,9 +23,31 @@ Only public-repository code, tests and synthetic validation notes are included.
   upgrade. Switching away from a channel breaks same-producer adjacency, as the
   sessionizer already does; it does not preserve an unseen broadcast across an
   intervening different item.
-- New queued bodies record their original timezone and an accepted continuation
-  deletion alias. The alias survives item/frontier deletion, so a pending event
-  just after midnight cannot resurrect the deleted prior-day broadcast.
+- New queued bodies record their original timezone. Live identity is resolved
+  during processing, never pinned at enqueue before a queued stop or channel
+  transition can be validated. Explicit legacy migration alone retains the old
+  assigned deletion alias, conservatively honoring that identity's cutoff.
+- Schema 4 adds a minimal live Twitch frontier independent of item foreign keys.
+  It is seeded only from accepted live Twitch playback state, never enqueue-derived
+  keys. A valid suppressed live sample advances this control record without
+  recreating any item, session or metadata. Continuous deleted backlogs therefore
+  remain suppressed across midnight, multiple batches and restart. Regressing
+  frames cannot advance it; genuine stops and item/channel transitions end
+  continuity. The existing five-minute adjacency rule still defines continuity.
+  Only live Twitch identity/producer/sequence/time/counter/stopped control data
+  survives deletion. Non-live playback does not gain retained viewing detail;
+  its ordinary playback state still cascades with the item. These live control
+  records, like deletion tombstones, remain until catalogue removal.
+
+## Schema compatibility
+
+Back up the whole catalogue, stop all Omoi processes and capture writers before
+running the new build. Startup's normal migration upgrades schema 3 to schema 4
+transactionally. Existing schema-3 binaries cannot reopen the upgraded database;
+restore the pre-upgrade backup to use one. Do not run an already-open old process
+concurrently with the upgrade. This is an intentional compatibility change for
+deletion safety, not the earlier feature's schema-3 compatibility promise.
+Migration conflict/rollback and accepted-only frontier seeding are tested.
 
 ## Legacy queue compatibility
 
@@ -39,11 +61,21 @@ choose the historical offset explicitly, for example:
 
 `omoi db migrate-playback --utc-offset +08:00`
 
-Replace that example with the offset that originally applied. The command updates
-only legacy queued live events in one transaction, preserves their old deletion
-identity and receipt IDs, and is idempotent. Invalid bodies, offsets, channel
-mismatches or size-limit violations roll back the migration. Resume collection
-after migration. There is no automatic timezone inference or data repair by this
+This is a read-only preview of at most 256 raw rows, showing event IDs, timestamps,
+old keys and proposed keys. Replace the example offset with the historical one;
+page with `--after-id` using `next_after_id` until it stops advancing. Mixed DST or
+travel offsets must be reviewed and partitioned, not assigned one assumed value.
+Apply only an explicitly selected set of IDs that shared the reviewed offset:
+
+`omoi db migrate-playback --utc-offset +08:00 --event-id producer-17 --apply`
+
+Repeat `--event-id` for at most 256 distinct IDs. There is no apply-all default.
+Selected-ID migration is transactional and idempotent for the same offset; missing
+or duplicated IDs, a different previously assigned offset, invalid bodies/channel
+or size violations roll back. The old deletion identity and receipts remain.
+Resume collection after all required groups are resolved. If the original offset
+cannot be established, retain the backup and blocked data rather than guess.
+There is no automatic timezone inference or data repair by this
 PR. Concurrent older application versions must not process the new raw format:
 they ignore the extra context and do not enforce these protections. Existing
 inbox bounds still apply, so stop new capture rather than let a blocked queue
@@ -62,7 +94,9 @@ That binary is not a verified build of the PR head and is only baseline evidence
 The real-listener verification script now asserts immediate and batched processing
 across midnight, deletion after enqueue and explicit migration through the CLI.
 Rust regressions cover a poisoned legacy frontier, exact old serialized bodies,
-three historical offsets, receipt preservation, rollback and migration deletion.
+three historical offsets, mixed-offset selection/preview, receipt preservation,
+rollback, migration deletion, enqueue-all/batch/delete/reopen transitions,
+long suppressed backlogs, rejected stops, valid transitions and non-live retention.
 
 Rust formatting and Python syntax pass locally. Full local rebuilding is blocked
 by exhausted storage; exact-head Windows/Linux CI must run the Rust suite and

@@ -42,7 +42,7 @@ fn continuing_live_key(
         return Ok(None);
     };
     let accepted: Option<String> = tx.query_row(
-        "SELECT i.external_id FROM playback_state p JOIN items i ON i.id=p.item_id WHERE p.producer=?1 AND p.stopped=0 AND p.at_ms<=?2 AND p.at_ms>=?3 AND i.platform='twitch'",
+        "SELECT external_id FROM playback_frontier WHERE producer=?1 AND stopped=0 AND at_ms<=?2 AND at_ms>=?3 AND platform='twitch'",
         params![event.producer_id,event.at_ms,event.at_ms.saturating_sub(300000)],
         |r|r.get(0),
     ).optional()?;
@@ -139,14 +139,13 @@ pub fn enqueue_checked(
         return Ok(false);
     }
     let at = e.at_ms;
-    // Retain the accepted identity as a deletion alias even if item deletion
-    // later cascades the playback frontier before this raw event is processed.
-    let deletion_key = continuing_live_key(&tx, &e, &key)?;
+    // Resolve continuity only while processing, after the monotonic checks.
+    // An enqueue-time alias could outlive a queued stop/channel transition.
     let body = serde_json::to_string(&Stored {
         event: e,
         key,
         live_offset: Some(offset),
-        deletion_key,
+        deletion_key: None,
     })
     .map_err(|_| invalid())?;
     if body.len() > 16384 {
@@ -198,9 +197,16 @@ pub fn run(tx: &Transaction<'_>) -> Result<u64> {
 
 /// Explicit owner-selected timezone migration for old raw Twitch bodies. No
 /// current timezone is guessed; original deletion identity and receipts remain.
-pub fn migrate_legacy_live(c: &mut Connection, offset: i32) -> Result<u64> {
+pub fn migrate_legacy_live(c: &mut Connection, offset: i32, event_ids: &[String]) -> Result<u64> {
     let zone = chrono::FixedOffset::east_opt(offset)
         .ok_or_else(|| Error::Config("Invalid migration offset".into()))?;
+    let selected: std::collections::BTreeSet<_> = event_ids.iter().cloned().collect();
+    if selected.is_empty() || selected.len() > 256 || selected.len() != event_ids.len() {
+        return Err(Error::Config(
+            "Select 1..256 distinct event IDs from the migration preview".into(),
+        ));
+    }
+    let mut seen = std::collections::BTreeSet::new();
     let tx = c.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
     let mut after = 0;
     let mut count = 0;
@@ -219,7 +225,26 @@ pub fn migrate_legacy_live(c: &mut Connection, offset: i32) -> Result<u64> {
             let mut stored: Stored = serde_json::from_str(&body).map_err(|_| {
                 Error::Config("Invalid stored playback event; migration rolled back".into())
             })?;
-            if stored.live_offset.is_some() || live_channel(&stored.key).is_none() {
+            if !selected.contains(&stored.event.event_id) {
+                continue;
+            }
+            if !seen.insert(stored.event.event_id.clone()) {
+                return Err(Error::Config(
+                    "Duplicate selected event ID; migration rolled back".into(),
+                ));
+            }
+            if live_channel(&stored.key).is_none() {
+                return Err(Error::Config(
+                    "Selected event is not live Twitch; migration rolled back".into(),
+                ));
+            }
+            if let Some(existing) = stored.live_offset {
+                if existing != offset {
+                    return Err(Error::Config(
+                        "Selected event already has a different timezone; migration rolled back"
+                            .into(),
+                    ));
+                }
                 continue;
             }
             if stored.deletion_key.is_some() {
@@ -253,6 +278,11 @@ pub fn migrate_legacy_live(c: &mut Connection, offset: i32) -> Result<u64> {
             count += 1;
         }
     }
+    if seen.len() != selected.len() {
+        return Err(Error::Config(
+            "A selected event is missing or changed; migration rolled back".into(),
+        ));
+    }
     let bytes: i64 = tx.query_row(
         "SELECT coalesce(sum(length(CAST(body AS BLOB))),0) FROM raw_events",
         [],
@@ -266,6 +296,87 @@ pub fn migrate_legacy_live(c: &mut Connection, offset: i32) -> Result<u64> {
     tx.commit()?;
     Ok(count)
 }
+
+#[derive(Serialize)]
+pub struct LegacyLivePreview {
+    pub next_after_id: i64,
+    pub rows: Vec<LegacyLiveProposal>,
+}
+
+#[derive(Serialize)]
+pub struct LegacyLiveProposal {
+    pub raw_id: i64,
+    pub event_id: String,
+    pub producer_id: String,
+    pub at_ms: i64,
+    pub original_key: ItemKey,
+    pub proposed_key: ItemKey,
+}
+
+/// Bounded read-only preview. The cursor covers 256 raw rows, including rows
+/// that need no migration; repeat with after_id until the cursor stops moving.
+pub fn preview_legacy_live(
+    c: &Connection,
+    offset: i32,
+    after_id: i64,
+) -> Result<LegacyLivePreview> {
+    let zone = chrono::FixedOffset::east_opt(offset)
+        .ok_or_else(|| Error::Config("Invalid preview offset".into()))?;
+    if after_id < 0 {
+        return Err(Error::Config("Invalid preview cursor".into()));
+    }
+    let mut page = LegacyLivePreview {
+        next_after_id: after_id,
+        rows: Vec::new(),
+    };
+    let mut query =
+        c.prepare("SELECT id,body FROM raw_events WHERE id>?1 ORDER BY id LIMIT 256")?;
+    let rows = query.query_map([after_id], |r| {
+        Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?))
+    })?;
+    for row in rows {
+        let (id, body) = row?;
+        page.next_after_id = id;
+        let stored: Stored = serde_json::from_str(&body).map_err(|_| {
+            Error::Config("Invalid stored playback event in preview; no changes made".into())
+        })?;
+        if stored.live_offset.is_some() || live_channel(&stored.key).is_none() {
+            continue;
+        }
+        let proposed =
+            crate::normalize::normalize(&stored.event.url, stored.event.at_ms / 1000, zone)
+                .ok_or_else(|| Error::Config("Invalid stored playback URL in preview".into()))?
+                .key;
+        if live_channel(&proposed) != live_channel(&stored.key) {
+            return Err(Error::Config(
+                "Stored playback channel mismatch in preview".into(),
+            ));
+        }
+        page.rows.push(LegacyLiveProposal {
+            raw_id: id,
+            event_id: stored.event.event_id,
+            producer_id: stored.event.producer_id,
+            at_ms: stored.event.at_ms,
+            original_key: stored.key,
+            proposed_key: proposed,
+        });
+    }
+    Ok(page)
+}
+// Retain only live Twitch continuity across deletion. Non-live monotonic state
+// remains in playback_state and follows the item's normal deletion lifecycle.
+fn record_frontier(tx: &Transaction<'_>, e: &Event, key: &ItemKey) -> Result<()> {
+    if live_channel(key).is_some() {
+        tx.execute("INSERT INTO playback_frontier VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(producer) DO UPDATE SET seq=excluded.seq,platform=excluded.platform,external_id=excluded.external_id,at_ms=excluded.at_ms,counter_ms=excluded.counter_ms,stopped=excluded.stopped",params![e.producer_id,e.seq,key.platform,key.external_id,e.at_ms,e.cumulative_played_ms,e.state=="stopped"])?;
+    } else {
+        tx.execute(
+            "DELETE FROM playback_frontier WHERE producer=?1",
+            [&e.producer_id],
+        )?;
+    }
+    Ok(())
+}
+
 /// Managed capture commits at most 256 raw events per transaction.
 pub fn run_limited(tx: &Transaction<'_>, batches: usize) -> Result<u64> {
     let mut count = 0;
@@ -282,17 +393,18 @@ pub fn run_limited(tx: &Transaction<'_>, batches: usize) -> Result<u64> {
                 .map_err(|_| Error::Config("Invalid stored playback event".into()))?;
             let e = stored.event;
             let mut key = stored.key;
-            let alias_deleted = match stored.deletion_key.as_ref() {
-                Some(alias) => crate::dedupe::forgotten(tx, alias, e.at_ms / 1000)?,
-                None => false,
-            };
-            if alias_deleted || crate::dedupe::forgotten(tx, &key, e.at_ms / 1000)? {
-                tx.execute("DELETE FROM raw_events WHERE id=?", [raw])?;
-                continue;
-            }
             let previous:Option<(i64,i64,i64,i64,i64,i64,bool)>=tx.query_row("SELECT seq,item_id,session_id,at_ms,counter_ms,played_ms,stopped FROM playback_state WHERE producer=?",[&e.producer_id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?))).optional()?;
-            if previous
-                .is_some_and(|p| e.seq <= p.0 || e.at_ms < p.3 || e.cumulative_played_ms < p.4)
+            let frontier: Option<(i64, i64, i64)> = tx
+                .query_row(
+                    "SELECT seq,at_ms,counter_ms FROM playback_frontier WHERE producer=?1",
+                    [&e.producer_id],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .optional()?;
+            if frontier
+                .is_some_and(|p| e.seq <= p.0 || e.at_ms < p.1 || e.cumulative_played_ms < p.2)
+                || previous
+                    .is_some_and(|p| e.seq <= p.0 || e.at_ms < p.3 || e.cumulative_played_ms < p.4)
             {
                 tx.execute(
                     "UPDATE playback_stats SET value=value+1 WHERE key='late'",
@@ -300,6 +412,20 @@ pub fn run_limited(tx: &Transaction<'_>, batches: usize) -> Result<u64> {
                 )?;
                 tx.execute("DELETE FROM raw_events WHERE id=?", [raw])?;
                 continue;
+            }
+            // Legacy records retain their originally assigned deletion identity.
+            // Validate sequence/time/counter before allowing even a suppressed
+            // frame to advance continuity. New records have no enqueue alias.
+            let original = stored
+                .deletion_key
+                .as_ref()
+                .or_else(|| stored.live_offset.is_none().then_some(&key));
+            if let Some(original) = original {
+                if crate::dedupe::forgotten(tx, original, e.at_ms / 1000)? {
+                    record_frontier(tx, &e, original)?;
+                    tx.execute("DELETE FROM raw_events WHERE id=?", [raw])?;
+                    continue;
+                }
             }
             // Only accepted processing state may choose a live identity.
             // Enqueue order and legacy playback_live_keys can include events
@@ -319,10 +445,13 @@ pub fn run_limited(tx: &Transaction<'_>, batches: usize) -> Result<u64> {
                     .ok_or_else(|| Error::Config("Invalid stored playback URL".into()))?
                     .key;
                 } else {
-                    return Err(Error::Config("Legacy Twitch queue has ambiguous broadcast dates; queue preserved. Back up the catalogue, then explicitly choose the historical timezone with: omoi db migrate-playback --utc-offset +08:00 (replace the example offset)".into()));
+                    return Err(Error::Config("Legacy Twitch queue has ambiguous broadcast dates; queue preserved. Back up the catalogue, then preview with: omoi db migrate-playback --utc-offset +08:00 (replace the example with the historical offset). Apply only reviewed event IDs with --event-id ID --apply; use separate selections for different historical offsets.".into()));
                 }
             }
             if crate::dedupe::forgotten(tx, &key, e.at_ms / 1000)? {
+                // Keep a validated tombstoned live chain moving through long
+                // backlogs/batches without restoring catalogue or metadata rows.
+                record_frontier(tx, &e, &key)?;
                 tx.execute("DELETE FROM raw_events WHERE id=?", [raw])?;
                 continue;
             }
@@ -367,6 +496,7 @@ pub fn run_limited(tx: &Transaction<'_>, batches: usize) -> Result<u64> {
             };
             tx.execute("UPDATE sessions SET end=?1,played_s=?2,max_position_s=max(max_position_s,?3) WHERE id=?4",params![(e.at_ms+999)/1000,played/1000,e.position_ms/1000,session])?;
             tx.execute("INSERT INTO playback_state VALUES(?1,?2,?3,?4,?5,?6,?7,?8) ON CONFLICT(producer) DO UPDATE SET seq=excluded.seq,item_id=excluded.item_id,session_id=excluded.session_id,at_ms=excluded.at_ms,counter_ms=excluded.counter_ms,played_ms=excluded.played_ms,stopped=excluded.stopped",params![e.producer_id,e.seq,id,session,e.at_ms,e.cumulative_played_ms,played,e.state=="stopped"])?;
+            record_frontier(tx, &e, &key)?;
             tx.execute("DELETE FROM raw_events WHERE id=?", [raw])?;
             count += 1;
         }

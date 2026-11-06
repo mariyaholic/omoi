@@ -110,9 +110,9 @@ def main():
             bad=subprocess.run([str(hostdir/native.name),'chrome-extension://'+'b'*32+'/'],input=b'',capture_output=True,env=env,timeout=5);assert bad.returncode!=0
             truncated=host();truncated.stdin.write(b'\x10\0');truncated.stdin.close();truncated.wait(timeout=5);assert not truncated.stdout.read()
             with closing(sqlite3.connect(home/'history.sqlite')) as c:
-                assert c.execute('pragma user_version').fetchone()[0]==3
+                assert c.execute('pragma user_version').fetchone()[0]==4
                 assert c.execute('select count(*) from raw_events').fetchone()[0]==0
-            print(json.dumps({'result':'pass','environment':os.name,'http_event_to_catalogue_ms':round(latency,2),'checks':['history-only','resumable consent','hello distinct from recording','origin rejection','automatic materialization','dedupe','stop/re-enable generation','native framing/origin/binding/version/permission','foreground lifetime','explicit background','EOF/truncated input','schema 3 retained'],'limitations':['No Edge permission UI, WebView2, physical sleep or installer execution proved by this script.']},indent=2))
+            print(json.dumps({'result':'pass','environment':os.name,'http_event_to_catalogue_ms':round(latency,2),'checks':['history-only','resumable consent','hello distinct from recording','origin rejection','automatic materialization','dedupe','stop/re-enable generation','native framing/origin/binding/version/permission','foreground lifetime','explicit background','EOF/truncated input','schema 4 accepted frontier'],'limitations':['No Edge permission UI, WebView2, physical sleep or installer execution proved by this script.']},indent=2))
         finally:
             for proc in processes:
                 if proc.poll() is None:proc.kill()

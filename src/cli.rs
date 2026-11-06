@@ -83,6 +83,14 @@ enum Database {
     MigratePlayback {
         #[arg(long, allow_hyphen_values = true)]
         utc_offset: String,
+        /// Preview only unless explicitly applying selected event IDs.
+        #[arg(long)]
+        apply: bool,
+        #[arg(long)]
+        event_id: Vec<String>,
+        /// Read-only preview cursor from the previous page.
+        #[arg(long, default_value_t = 0)]
+        after_id: i64,
     },
 }
 pub fn run() -> u8 {
@@ -229,23 +237,49 @@ fn execute(cli: Cli) -> Result<u8> {
             output(&crate::db::info(&c)?)?;
         }
         Commands::Db {
-            command: Database::MigratePlayback { utc_offset },
+            command:
+                Database::MigratePlayback {
+                    utc_offset,
+                    apply,
+                    event_id,
+                    after_id,
+                },
         } => {
             let migration = Config {
                 local_utc_offset: utc_offset,
                 ..Config::default()
             };
             let offset = migration.offset_seconds()?;
-            let mut c = crate::db::open(&paths.db, &config, false)?;
+            if apply && (event_id.is_empty() || after_id != 0) {
+                return Err(Error::Config(
+                    "Applying migration requires --event-id from preview and no --after-id".into(),
+                ));
+            }
+            if !apply && !event_id.is_empty() {
+                return Err(Error::Config(
+                    "--event-id requires --apply; omit it for the read-only preview".into(),
+                ));
+            }
+            let mut c = if apply {
+                crate::db::open_existing_writable(&paths.db, &config)?
+            } else {
+                crate::db::open(&paths.db, &config, false)?
+            };
             if crate::db::info(&c)?.user_version != crate::db::schema::VERSION {
                 return Err(Error::Schema(
                     "Migrate catalogue schema before playback timezone migration".into(),
                 ));
             }
-            let count = crate::sessionize::migrate_legacy_live(&mut c, offset)?;
-            output(
-                &serde_json::json!({"migrated_legacy_playback_events":count,"utc_offset":migration.local_utc_offset}),
-            )?;
+            if apply {
+                let count = crate::sessionize::migrate_legacy_live(&mut c, offset, &event_id)?;
+                output(
+                    &serde_json::json!({"migrated_legacy_playback_events":count,"utc_offset":migration.local_utc_offset}),
+                )?;
+            } else {
+                output(&crate::sessionize::preview_legacy_live(
+                    &c, offset, after_id,
+                )?)?;
+            }
         }
         Commands::Export { json, out, .. } => {
             let c = crate::db::open(&paths.db, &config, false)?;

@@ -146,3 +146,9 @@ Owner release actions: approve a real Edge store identity, build/register that e
 release identity, complete clean-device Edge and physical sleep/logon/battery tests,
 measure the entire Windows GUI/browser/host process tree, then separately arrange
 signing/store submission/public distribution. This task neither publishes nor signs.
+
+## Playback-state upgrade and older queued Twitch events
+
+The state-review follow-up upgrades the catalogue to schema 4. Stop all older Omoi processes and capture writers and back up the whole catalogue before first writable launch; schema-3 binaries cannot reopen the upgraded database. The accepted frontier intentionally survives item deletion so queued samples cannot resurrect that broadcast across a batch boundary.
+
+Old queued Twitch events lack their original timezone. Ambiguous cases are preserved with an actionable error. Use the bounded read-only preview and explicitly selected event-ID migration described in [playback state recovery](state-audit.md); choose separate offsets for DST/travel groups, and do not guess when history is uncertain. No automatic queue reinterpretation is performed.

@@ -1,7 +1,7 @@
 # Setup and transport contract (version 1)
 
 Setup is one bounded JSON record in `checkpoints`, reserved key `omoi:setup:v1`.
-Catalogue schema remains 3. Browser checkpoint keys use their existing source IDs.
+Catalogue schema is 4 after the playback-state follow-up. Browser checkpoint keys use their existing source IDs. Schema 4 retains accepted producer continuity across item deletion; stop older processes and back up before upgrade. Ambiguous pre-upgrade Twitch queue dates require explicit reviewed recovery, not a guessed timezone. See [state audit and recovery](state-audit.md).
 A future setup version fails closed. Choices/progress/profile scope persist;
 process ownership and client liveness never come from stored booleans alone.
 An OS-held per-home app lock proves foreground lifetime and releases on crash.

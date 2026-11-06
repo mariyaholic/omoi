@@ -10,7 +10,7 @@ were present on the requested branch. No owner data, paths or private receipts u
 
 | Package | Implemented and locally checked | Remaining acceptance |
 |---|---|---|
-| IF1 | Versioned bounded setup record, independent state dimensions, stale mutation rejection, consent epochs, source scope; schema 3 unchanged | Windows UI consistency below |
+| IF1 | Versioned bounded setup record, independent state dimensions, stale mutation rejection, consent epochs, source scope; initial feature kept schema 3; playback-state follow-up adds schema 4 (see state-audit.md) | Windows UI consistency below |
 | IF2 | App-owned listener, safe collision, cancellable network reads, startup inbox drain, 256-event transactions, automatic processing, stop/restart | Full Windows process-tree/long-run measurements |
 | IF3 | Guided optional capture, resumable step, explicit credential copy, script export/import fallback, authenticated hello, shared 0.2.0 capture core | Real Edge manager permission/foreground-dialog journey |
 | IF4 | Generation-owned replies, automatic catalogue refresh, persisted exact scheduled scope, explicit native background opt-in | Physical logon/sleep/battery; no desktop auto-launch feature promised |

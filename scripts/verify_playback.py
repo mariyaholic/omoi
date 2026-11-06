@@ -137,7 +137,11 @@ def main():
             assert post(first_live) == 200
             completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
             assert completed.returncode == 0, completed.stderr
-            assert post(first_live | dict(event_id='delete-live-1', seq=1, at_ms=midnight+1000, position_ms=2000, cumulative_played_ms=2000)) == 200
+            # A long pre-deletion backlog must keep its tombstoned continuity,
+            # not expire after five minutes merely because suppressed samples
+            # fail to update the durable control state.
+            for seq in range(1, 9):
+                assert post(first_live | dict(event_id=f'delete-live-{seq}', seq=seq, at_ms=midnight-1000+120000*seq, position_ms=120000*seq, cumulative_played_ms=120000*seq)) == 200
             with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
                 conn.execute('PRAGMA foreign_keys=ON')
                 item = conn.execute("SELECT id,external_id FROM items WHERE platform='twitch' AND external_id LIKE 'live:delete_fixture:%'").fetchone()
@@ -148,6 +152,7 @@ def main():
             assert completed.returncode == 0, completed.stderr
             with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
                 assert conn.execute("SELECT count(*) FROM items WHERE external_id LIKE 'live:delete_fixture:%'").fetchone() == (0,)
+                assert conn.execute("SELECT seq FROM playback_frontier WHERE producer='delete-live'").fetchone() == (8,)
 
             # Old raw bodies did not record their timezone. Refuse ambiguous
             # dates without modifying bytes, then use explicit owner migration.
@@ -171,6 +176,14 @@ def main():
             with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
                 assert conn.execute('SELECT id,body FROM raw_events ORDER BY id').fetchall() == before
             completed = subprocess.run([binary, 'db', 'migrate-playback', '--utc-offset', '+08:00'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode == 0, completed.stderr
+            preview = json.loads(completed.stdout)
+            assert {row['event_id'] for row in preview['rows']} == {'legacy-1', 'legacy-2'}
+            with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                assert conn.execute('SELECT id,body FROM raw_events ORDER BY id').fetchall() == before
+            completed = subprocess.run([binary, 'db', 'migrate-playback', '--utc-offset', '+08:00', '--apply'], env=env, capture_output=True, text=True, timeout=30)
+            assert completed.returncode != 0
+            completed = subprocess.run([binary, 'db', 'migrate-playback', '--utc-offset', '+08:00', '--event-id', 'legacy-1', '--event-id', 'legacy-2', '--apply'], env=env, capture_output=True, text=True, timeout=30)
             assert completed.returncode == 0, completed.stderr
             assert json.loads(completed.stdout)['migrated_legacy_playback_events'] == 2
             completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)

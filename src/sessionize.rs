@@ -59,7 +59,7 @@ pub fn enqueue_checked(
     {
         return Err(invalid());
     }
-    let mut key = crate::normalize::normalize(
+    let key = crate::normalize::normalize(
         &e.url,
         e.at_ms / 1000,
         chrono::FixedOffset::east_opt(offset).ok_or_else(invalid)?,
@@ -106,27 +106,6 @@ pub fn enqueue_checked(
     )? == 0
     {
         return Ok(false);
-    }
-    if key.platform == "twitch" && key.external_id.starts_with("live:") {
-        let channel = key
-            .external_id
-            .split(':')
-            .nth(1)
-            .unwrap_or_default()
-            .to_owned();
-        let prior: Option<(String,i64,i64,bool)> = tx.query_row(
-            "SELECT external_id,last_seq,last_at_ms,stopped FROM playback_live_keys WHERE producer=?1 AND channel=?2",
-            params![e.producer_id, channel],
-            |r| Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?)),
-        ).optional()?;
-        if let Some((key_before, seq, at, stopped)) = &prior {
-            if *seq < 0 || e.seq <= *seq || (!stopped && e.at_ms.saturating_sub(*at) <= 300000) {
-                key.external_id = key_before.clone();
-            }
-        }
-        if prior.as_ref().is_none_or(|p| e.seq > p.1) {
-            tx.execute("INSERT INTO playback_live_keys(producer,channel,external_id,last_seq,last_at_ms,stopped) VALUES(?1,?2,?3,?4,?5,?6) ON CONFLICT(producer,channel) DO UPDATE SET external_id=excluded.external_id,last_seq=excluded.last_seq,last_at_ms=excluded.last_at_ms,stopped=excluded.stopped",params![e.producer_id,channel,key.external_id,e.seq,e.at_ms,e.state=="stopped"])?;
-        }
     }
     let at = e.at_ms;
     let body = serde_json::to_string(&Stored { event: e, key }).map_err(|_| invalid())?;
@@ -191,10 +170,7 @@ pub fn run_limited(tx: &Transaction<'_>, batches: usize) -> Result<u64> {
             let stored: Stored = serde_json::from_str(&body)
                 .map_err(|_| Error::Config("Invalid stored playback event".into()))?;
             let e = stored.event;
-            if crate::dedupe::forgotten(tx, &stored.key, e.at_ms / 1000)? {
-                tx.execute("DELETE FROM raw_events WHERE id=?", [raw])?;
-                continue;
-            }
+            let mut key = stored.key;
             let previous:Option<(i64,i64,i64,i64,i64,i64,bool)>=tx.query_row("SELECT seq,item_id,session_id,at_ms,counter_ms,played_ms,stopped FROM playback_state WHERE producer=?",[&e.producer_id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?))).optional()?;
             if previous
                 .is_some_and(|p| e.seq <= p.0 || e.at_ms < p.3 || e.cumulative_played_ms < p.4)
@@ -206,10 +182,50 @@ pub fn run_limited(tx: &Transaction<'_>, batches: usize) -> Result<u64> {
                 tx.execute("DELETE FROM raw_events WHERE id=?", [raw])?;
                 continue;
             }
+            // Only accepted processing state may choose a live identity.
+            // Enqueue order and legacy playback_live_keys can include events
+            // that the monotonic frontier rejects, so neither is authoritative.
+            let live_channel = if key.platform == "twitch" && key.external_id.starts_with("live:") {
+                Some(
+                    key.external_id
+                        .split(':')
+                        .nth(1)
+                        .unwrap_or_default()
+                        .to_owned(),
+                )
+            } else {
+                None
+            };
+            if let Some(channel) = &live_channel {
+                if let Some(p) = previous.filter(|p| !p.6 && e.at_ms - p.3 <= 300000) {
+                    let accepted: Option<(String, String)> = tx
+                        .query_row(
+                            "SELECT platform,external_id FROM items WHERE id=?1",
+                            [p.1],
+                            |r| Ok((r.get(0)?, r.get(1)?)),
+                        )
+                        .optional()?;
+                    if let Some((platform, identity)) = accepted {
+                        if platform == "twitch" && identity.starts_with(&format!("live:{channel}:"))
+                        {
+                            key.external_id = identity;
+                        }
+                    }
+                }
+            }
+            if crate::dedupe::forgotten(tx, &key, e.at_ms / 1000)? {
+                tx.execute("DELETE FROM raw_events WHERE id=?", [raw])?;
+                continue;
+            }
+            if let Some(channel) = &live_channel {
+                // Keep the legacy compatibility table current, but never use an
+                // enqueue-derived row to override the accepted playback state.
+                tx.execute("INSERT INTO playback_live_keys(producer,channel,external_id,last_seq,last_at_ms,stopped) VALUES(?1,?2,?3,?4,?5,?6) ON CONFLICT(producer,channel) DO UPDATE SET external_id=excluded.external_id,last_seq=excluded.last_seq,last_at_ms=excluded.last_at_ms,stopped=excluded.stopped",params![e.producer_id,channel,key.external_id,e.seq,e.at_ms,e.state=="stopped"])?;
+            }
             crate::dedupe::ingest(
                 tx,
                 &crate::dedupe::Candidate {
-                    key: stored.key.clone(),
+                    key: key.clone(),
                     started_at: e.at_ms / 1000,
                     source: "userscript".into(),
                     title: None,
@@ -219,7 +235,7 @@ pub fn run_limited(tx: &Transaction<'_>, batches: usize) -> Result<u64> {
             )?;
             let id: i64 = tx.query_row(
                 "SELECT id FROM items WHERE platform=?1 AND external_id=?2",
-                params![stored.key.platform, stored.key.external_id],
+                params![key.platform, key.external_id],
                 |r| r.get(0),
             )?;
             crate::metadata::observed(

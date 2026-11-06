@@ -146,6 +146,84 @@ fn live_identity_changes_after_an_ended_broadcast() {
 }
 
 #[test]
+fn rejected_live_stop_cannot_split_midnight_identity() {
+    for batched in [false, true] {
+        let mut c = database();
+        let midnight = 1_700_006_400_000i64;
+        for (seq, offset, counter, state) in [
+            (0, -30000, 0, "playing"),
+            (1, -10000, 20000, "playing"),
+            (2, -5000, 10000, "stopped"),
+            (3, 10000, 40000, "playing"),
+        ] {
+            let mut e = event(seq, midnight + offset, counter);
+            e["url"] = json!("https://www.twitch.tv/maria");
+            e["state"] = json!(state);
+            sessionize::enqueue(&mut c, &e.to_string(), 28800).unwrap();
+            if !batched {
+                process(&mut c);
+            }
+        }
+        process(&mut c);
+        assert_eq!(
+            c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            c.query_row("SELECT count(*) FROM sessions", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+        assert_eq!(sessionize::total(&c, 1).unwrap(), 40);
+        assert_eq!(
+            c.query_row(
+                "SELECT value FROM playback_stats WHERE key='late'",
+                [],
+                |r| r.get::<_, i64>(0)
+            )
+            .unwrap(),
+            1
+        );
+        let identity: (String, i64, bool) = c
+            .query_row(
+                "SELECT external_id,last_seq,stopped FROM playback_live_keys",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(identity, ("live:maria:2023-11-15".into(), 3, false));
+    }
+}
+
+#[test]
+fn legacy_enqueue_frontier_cannot_override_accepted_live_state() {
+    let mut c = database();
+    let midnight = 1_700_006_400_000i64;
+    let mut first = event(0, midnight - 10000, 0);
+    first["url"] = json!("https://www.twitch.tv/maria");
+    sessionize::enqueue(&mut c, &first.to_string(), 28800).unwrap();
+    process(&mut c);
+    // An older writer could advance this table for an event never accepted by
+    // playback_state. Only the latter is authoritative after upgrade/reopen.
+    c.execute(
+        "UPDATE playback_live_keys SET external_id='live:maria:2023-11-16',last_seq=100,stopped=1",
+        [],
+    )
+    .unwrap();
+    let mut next = event(1, midnight + 10000, 20000);
+    next["url"] = json!("https://www.twitch.tv/maria");
+    sessionize::enqueue(&mut c, &next.to_string(), 28800).unwrap();
+    process(&mut c);
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM items", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        1
+    );
+    assert_eq!(sessionize::total(&c, 1).unwrap(), 20);
+}
+
+#[test]
 fn evicted_unprocessed_event_can_be_retried() {
     let mut c = database();
     let first = event(0, 1700000000000, 0);

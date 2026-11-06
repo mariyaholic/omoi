@@ -7,12 +7,12 @@ test('consent epochs cannot replay old capture or cross catalogues',()=>{const s
 test('queue is bounded and rejects overflow without deleting an unacknowledged event',()=>{const s=state();for(let i=0;i<1024;i++)assert.equal(Q.append(s,e(i)),true);assert.equal(Q.append(s,e(1024)),false);assert.equal(s.queue[0].event.event_id,'producer:0');});
 test('manifest packages scripts without page messaging or general script loading',()=>{const m=JSON.parse(fs.readFileSync('extension/manifest.json'));assert.equal(m.manifest_version,3);assert.ok(!m.permissions.includes('userScripts'));assert.ok(!m.host_permissions);assert.equal(m.optional_host_permissions.length,7);assert.ok(!m.externally_connectable);assert.equal(fs.readFileSync('extension/core.js','utf8'),fs.readFileSync('capture/core.js','utf8'));});
 function workerFixture(storage={}){
- const listeners={},timers=new Map();let timer=0,permission=true,online=true,eventsFail=false,generation=1,commits=new Set(),wire=[];
- const chrome={storage:{local:{setAccessLevel:async()=>{},get:async()=>structuredClone(storage),set:async value=>{await Promise.resolve();Object.assign(storage,structuredClone(value));}}},permissions:{contains:async()=>permission},alarms:{create:async()=>{},onAlarm:{addListener:fn=>listeners.alarm=fn}},runtime:{id:'a'.repeat(32),getURL:p=>`chrome-extension://${'a'.repeat(32)}/${p}`,getManifest:()=>({optional_host_permissions:['https://www.youtube.com/*']}),onMessage:{addListener:fn=>listeners.message=fn},connectNative:()=>{
+ const listeners={},timers=new Map(),alarms=new Set();let timer=0,permission=true,online=true,eventsFail=false,helloFail=false,generation=1,commits=new Set(),wire=[];
+ const chrome={storage:{local:{setAccessLevel:async()=>{},get:async()=>structuredClone(storage),set:async value=>{await Promise.resolve();Object.assign(storage,structuredClone(value));}}},permissions:{contains:async()=>permission},alarms:{create:async name=>alarms.add(name),onAlarm:{addListener:fn=>listeners.alarm=fn}},runtime:{id:'a'.repeat(32),getURL:p=>`chrome-extension://${'a'.repeat(32)}/${p}`,getManifest:()=>({optional_host_permissions:['https://www.youtube.com/*']}),onMessage:{addListener:fn=>listeners.message=fn},connectNative:()=>{
   const callbacks={};return {onMessage:{addListener:fn=>callbacks.message=fn},onDisconnect:{addListener:fn=>callbacks.disconnect=fn},disconnect:()=>callbacks.disconnect?.(),postMessage:m=>{
     wire.push(structuredClone(m));queueMicrotask(()=>{
      if(!online){callbacks.disconnect();return;}
-     if(m.type==='hello'){callbacks.message(m.permission?{ok:true,binding:'fixture-home',generation}:{ok:false,error:'Permission needed'});return;}
+     if(m.type==='hello'){callbacks.message(helloFail?{ok:false,error:'App temporarily unavailable',retryable:true}:m.permission?{ok:true,binding:'fixture-home',generation}:{ok:false,error:'Permission needed'});return;}
      if(m.type==='status'){callbacks.message({ok:true,binding:'fixture-home',generation});return;}
      if(m.type==='event'){if(eventsFail){callbacks.disconnect();return;}if(m.generation!==generation){callbacks.message({ok:false,error:'Reconnect'});return;}commits.add(m.event.event_id);callbacks.message({ok:true});}
     });
@@ -22,8 +22,17 @@ function workerFixture(storage={}){
  const popup={id:chrome.runtime.id,url:chrome.runtime.getURL('popup.html')};
  const sender={id:chrome.runtime.id,url:'https://www.youtube.com/watch?v=abcdefghijk',frameId:0};
  const send=(message,from=sender)=>new Promise(resolve=>listeners.message(message,from,resolve));
- return {send,storage,commits,wire,popup,online:x=>online=x,eventsFail:x=>eventsFail=x,permission:x=>permission=x,generation:x=>generation=x};
+ return {send,storage,commits,wire,popup,alarms,alarm:async()=>{alarms.delete('retry');listeners.alarm({name:'retry'});await vm.runInContext('chain',context);},helloFail:x=>helloFail=x,online:x=>online=x,eventsFail:x=>eventsFail=x,permission:x=>permission=x,generation:x=>generation=x};
 }
+
+test('actual retry alarm survives rejected hello and drains without new tab activity',async()=>{
+ const storage={capture:{enabled:true,binding:'fixture-home',generation:1,dropped:0,queue:[{binding:'fixture-home',generation:1,event:{event_id:'pending:1',seq:1}}]}},f=workerFixture(storage);
+ f.helloFail(true);
+ for(let attempt=0;attempt<3;attempt++){
+  await f.alarm();assert.equal(storage.capture.queue.length,1);assert.ok(f.alarms.has('retry'),'rejected hello must leave a future retry');
+ }
+ f.helloFail(false);await f.alarm();assert.equal(storage.capture.queue.length,0);assert.equal(f.commits.size,1);assert.equal(f.alarms.size,0);
+});
 test('actual worker serializes concurrent tabs and restores durable queue after suspension',async()=>{
  const storage={},f=workerFixture(storage);const ready=await f.send({type:'connect'},f.popup);assert.equal(ready.enabled,true);
  f.eventsFail(true);

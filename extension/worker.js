@@ -30,7 +30,9 @@ async function negotiate(s){
   OmoiQueue.epoch(s,reply.binding,reply.generation);await save(s);helloAt=Date.now();lastError='';return true;
 }
 async function flush(s){
-  if(!s.queue.length||!await negotiate(s))return;
+  if(!s.queue.length)return;
+  try {
+  if(!await negotiate(s))return;
   for(let n=0;n<64&&s.queue.length;n++){
     const head=s.queue[0];
     if(head.binding!==s.binding||head.generation!==s.generation)break;
@@ -38,7 +40,11 @@ async function flush(s){
     if(!reply.ok){lastError=reply.error;helloAt=0;if(reply.drop){OmoiQueue.acknowledge(s,head.event.event_id);s.dropped++;await save(s);continue;}break;}
     OmoiQueue.acknowledge(s,head.event.event_id);await save(s);
   }
-  if(s.queue.length)await chrome.alarms.create('retry',{delayInMinutes:1});
+  } finally {
+    // A retry alarm is one-shot. A rejected hello must schedule another even
+    // when it returns normally rather than throwing or accepting an event.
+    if(s.enabled&&s.queue.length)await chrome.alarms.create('retry',{delayInMinutes:1});
+  }
 }
 function trustedContent(sender){try{const u=new URL(sender.url);return sender.id===chrome.runtime.id&&sender.frameId===0&&sites.some(s=>s===`${u.origin}/*`);}catch{return false;}}
 async function handle(message,sender){

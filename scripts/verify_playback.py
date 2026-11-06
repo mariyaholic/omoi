@@ -112,6 +112,25 @@ def main():
                 assert conn.execute('SELECT channel,duration_s FROM items').fetchone() == ('Fixture', 600)
             collision = subprocess.run([binary, 'listen'], env=env, capture_output=True, timeout=15)
             assert collision.returncode != 0
+            # A regressing stop must not change the live identity before the
+            # sessionizer rejects it. Exercise real HTTP ingestion, independent
+            # collector processes, persisted state and the local-day boundary.
+            midnight = 1700064000000  # 2023-11-16 00:00 at default UTC+08.
+            for batched in (False, True):
+                producer = f'twitch-regression-{int(batched)}'
+                for seq, offset, counter, state in [(0, -30000, 0, 'playing'), (1, -10000, 20000, 'playing'), (2, -5000, 10000, 'stopped'), (3, 10000, 40000, 'playing')]:
+                    sample = first | dict(event_id=f'{producer}-{seq}', producer_id=producer, seq=seq,
+                                          url=f'https://www.twitch.tv/fixture_{int(batched)}', at_ms=midnight+offset,
+                                          position_ms=counter, cumulative_played_ms=counter, state=state)
+                    assert post(sample) == 200
+                    if not batched:
+                        completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+                        assert completed.returncode == 0, completed.stderr
+                completed = subprocess.run([binary, 'collect'], env=env, capture_output=True, text=True, timeout=30)
+                assert completed.returncode == 0, completed.stderr
+                with closing(sqlite3.connect(root / 'history.sqlite')) as conn:
+                    rows = conn.execute("SELECT i.external_id,s.played_s FROM sessions s JOIN items i ON i.id=s.item_id WHERE i.platform='twitch' AND i.external_id LIKE ?", (f'live:fixture_{int(batched)}:%',)).fetchall()
+                    assert len(rows) == 1 and rows[0][1] == 40, ('regressing stop split Twitch session', batched, rows)
             if os.name == 'nt':
                 from ctypes import wintypes
                 from measure import Memory
@@ -185,7 +204,7 @@ def main():
     budgets={}
     if resources:
         budgets['listener_peak_at_most_10mb']=max(resources['peak_working_set_bytes'],resources.get('full_inbox',{}).get('lifetime_peak_bytes',0),resources.get('sustained',{}).get('lifetime_peak_bytes',0))<=10000000
-    checks=['listener auth','hostile requests','restart','duplicate replay','collection','metadata','port collision']
+    checks=['listener auth','hostile requests','restart','duplicate replay','collection','metadata','port collision','Twitch regressing stop across midnight, immediate and batched processing']
     if args.stress_inbox:
         checks.append('20 MB inbox eviction cap')
     if args.duration:

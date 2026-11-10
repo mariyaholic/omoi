@@ -30,8 +30,7 @@ fn run(a: Args) -> Result<()> {
     let original_paths = Paths::resolve(&env)?;
     let config = Config::load(&original_paths.config)?;
     let discovery = readers::discover::discover(&config, &env)?;
-    let temp =
-        readers::snapshot::TempDir::create(&std::env::temp_dir().join("omoi-retained-week"))?;
+    let temp = readers::snapshot::TempDir::create(&std::env::temp_dir())?;
     let cutoff = chrono::Utc::now().timestamp() - 7 * 86400;
     let mut expected = BTreeSet::new();
     let mut reports = vec![];

@@ -133,6 +133,62 @@ fn required_columns() {
 }
 
 #[test]
+fn v3_upgrade_seeds_only_accepted_frontier_and_rolls_back_conflicts() {
+    let mut c = conn();
+    for sql in [
+        include_str!("../src/db/0001.sql"),
+        include_str!("../src/db/0002.sql"),
+        include_str!("../src/db/0003.sql"),
+    ] {
+        c.execute_batch(sql).unwrap();
+    }
+    c.execute_batch("PRAGMA user_version=3; INSERT INTO items(id,platform,external_id) VALUES(1,'twitch','live:maria:2023-11-16'); INSERT INTO sessions(id,item_id,start,end,played_s,source) VALUES(1,1,0,1,1,'userscript'); INSERT INTO playback_state VALUES('producer',1,1,1,1000,1000,1000,0); INSERT INTO playback_live_keys VALUES('producer','maria','live:maria:poison',999,999999,1); CREATE TABLE playback_frontier(conflict);").unwrap();
+    assert!(db::migrate(&mut c).is_err());
+    assert_eq!(db::info(&c).unwrap().user_version, 3);
+    c.execute_batch("DROP TABLE playback_frontier").unwrap();
+    c.execute_batch("INSERT INTO items(id,platform,external_id) VALUES(2,'youtube','abcdefghijk'); INSERT INTO sessions(id,item_id,start,end,played_s,source) VALUES(2,2,0,1,1,'userscript'); INSERT INTO playback_state VALUES('nonlive',1,2,2,1000,1000,1000,0);").unwrap();
+    db::migrate(&mut c).unwrap();
+    assert_eq!(
+        c.query_row(
+            "SELECT count(*) FROM playback_frontier WHERE producer='nonlive'",
+            [],
+            |r| r.get::<_, i64>(0)
+        )
+        .unwrap(),
+        0
+    );
+    let frontier: (String, i64) = c
+        .query_row("SELECT external_id,seq FROM playback_frontier", [], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .unwrap();
+    assert_eq!(frontier, ("live:maria:2023-11-16".into(), 1));
+    c.execute_batch("DELETE FROM items").unwrap();
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM playback_state", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    assert_eq!(
+        c.query_row("SELECT count(*) FROM playback_frontier", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        1
+    );
+    db::migrate(&mut c).unwrap();
+    assert_eq!(db::info(&c).unwrap().user_version, 4);
+}
+
+#[test]
+fn existing_writable_connection_never_creates_missing_database() {
+    let temp = omoi::readers::snapshot::TempDir::create(&std::env::temp_dir()).unwrap();
+    let path = temp.0.join("absent.sqlite");
+    assert!(db::open_existing_writable(&path, &omoi::config::Config::default()).is_err());
+    assert!(!path.exists());
+}
+
+#[test]
 fn info_reports_counts() {
     let mut c = conn();
     db::migrate(&mut c).unwrap();

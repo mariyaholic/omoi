@@ -9,6 +9,10 @@ On Windows, launch `omoi-desktop.exe` for a standalone Omoi window without brows
 
 ## Open the app
 
+Next development task: [cloud implementation handoff](CLOUD_HANDOFF.md) and
+[installation-friction roadmap](docs/installation-friction.md). These describe
+planned setup improvements; the current setup instructions below still apply.
+
 The [runtime state-machine inventory](docs/state-machines.md) describes transition
 ownership, retry/recovery rules, deletion semantics and known limits.
 
@@ -41,7 +45,7 @@ omoi export --json --out watched.json
 
 The collector exits after each run. Unchanged profiles are skipped; changed profiles are reconciled in bounded batches so backfilled visits, replaced history files and updated observations are seen. This costs a scan of each changed profile. Reloads within 30 minutes of a fixed view anchor merge into that view. `--browser chrome`, `--browser edge`, `--browser brave` or `--browser firefox` restricts a run; repeat the option for multiple browsers. Export requires one format and refuses to overwrite an existing destination. Keep export files outside Omoi's data directory.
 
-Deleting an item removes its catalogue details, views and sessions. A minimal platform/identity/deletion-time record suppresses old history and pending playback during reconciliation. A later opening can add it again with a new numeric ID. Schema 3 installs this protection transactionally on first writable open.
+Deleting an item removes its catalogue details, views and sessions. Deletion tombstones and a minimal per-producer live Twitch frontier (identity, sequence, timestamp, cumulative counter and stopped state) suppress old history and pending continuous playback across processing batches. Valid suppressed samples advance this control record without restoring viewing rows. These control records remain after deletion; they do not retain titles or view/session rows, and non-live playback does not gain this retained frontier. A later opening can add the item again with a new numeric ID. Schema 4 adds the durable frontier on first writable open. Stop older Omoi processes and back up the catalogue before upgrading; schema-3 binaries cannot reopen schema 4. See [playback state and legacy-queue recovery](docs/state-audit.md).
 
 Optional `%LOCALAPPDATA%\omoi\config.toml` uses the restricted grammar in the architecture contract:
 

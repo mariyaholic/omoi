@@ -44,6 +44,10 @@ pub fn apply_initial(conn: &mut Connection, sql: &str) -> Result<()> {
         tx.execute_batch(include_str!("0003.sql"))?;
         tx.pragma_update(None, "user_version", 3)?;
     }
+    if version < 4 {
+        tx.execute_batch(include_str!("0004.sql"))?;
+        tx.pragma_update(None, "user_version", 4)?;
+    }
     tx.commit()?;
     Ok(())
 }

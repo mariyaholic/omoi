@@ -37,6 +37,7 @@ jobs:
       - name: Test
         run: cargo +${{ matrix.toolchain }} test --locked --all-targets
       - name: Release build
+        id: release_build
         run: cargo +${{ matrix.toolchain }} build --locked --release --bins --example synthetic
       - name: Synthetic release journey
         run: python scripts/smoke.py --bin-dir target/release
@@ -47,14 +48,45 @@ jobs:
         run: python scripts/verify_playback.py --binary target/release/omoi${{ runner.os == 'Windows' && '.exe' || '' }}
       - name: Userscript capture semantics
         run: node --test tests/userscript.test.cjs
-      - name: Scheduler absence and cleanup transitions
+      - name: Capture bundle consistency
+        run: python scripts/build_capture.py --check
+      - name: Companion queue and worker lifecycle
+        run: node --test tests/extension.test.cjs
+      - name: Guided setup and native protocol journey
+        run: python scripts/verify_setup.py --bin-dir target/release
+      - name: Isolated native host registration lifecycle
+        if: ${{ !cancelled() && runner.os == 'Windows' && steps.release_build.outcome == 'success' }}
+        run: python tests/host_registration.py
+      - name: Unsigned installer compile
+        id: installer_compile
+        if: ${{ !cancelled() && runner.os == 'Windows' && steps.release_build.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DBinDir=$((Resolve-Path target/release).Path)" packaging/omoi.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Disposable Windows installer lifecycle
+        if: ${{ !cancelled() && runner.os == 'Windows' && steps.installer_compile.outcome == 'success' }}
+        run: python scripts/verify_installer.py --installer dist/Omoi-Setup-unsigned.exe
+      - name: Portable Windows package verification
+        if: ${{ !cancelled() && runner.os == 'Windows' && steps.release_build.outcome == 'success' }}
+        run: python scripts/package_windows.py --bin-dir target/release --out dist/Omoi-portable-unsigned.zip
+      - name: Private unsigned review artifacts
         if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: omoi-windows-unsigned
+          path: |
+            dist/Omoi-Setup-unsigned.exe
+            dist/Omoi-portable-unsigned.zip
+          retention-days: 7
+      - name: Scheduler absence and cleanup transitions
+        if: ${{ !cancelled() && runner.os == 'Windows' && steps.release_build.outcome == 'success' }}
         run: python tests/scheduler_state.py
       - name: Desktop profile cleanup transitions
         run: python tests/desktop_state.py
       - name: UI race test dependency
-        if: runner.os == 'Windows'
+        if: ${{ !cancelled() && runner.os == 'Windows' && steps.release_build.outcome == 'success' }}
         run: python -m pip install playwright==1.62.0
       - name: UI request ownership transitions
-        if: runner.os == 'Windows'
+        if: ${{ !cancelled() && runner.os == 'Windows' && steps.release_build.outcome == 'success' }}
         run: python tests/ui_state.py

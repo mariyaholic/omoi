@@ -9,6 +9,10 @@ On Windows, launch `omoi-desktop.exe` for a standalone Omoi window without brows
 
 ## Open the app
 
+Next development task: [cloud implementation handoff](CLOUD_HANDOFF.md) and
+[installation-friction roadmap](docs/installation-friction.md). These describe
+planned setup improvements; the current setup instructions below still apply.
+
 The [runtime state-machine inventory](docs/state-machines.md) describes transition
 ownership, retry/recovery rules, deletion semantics and known limits.
 

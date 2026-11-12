@@ -1,6 +1,16 @@
 # Implementation progress
 
-2026-11-03. Branch `feat/core-foundations`, private PR #2. Current work supersedes earlier foundations-only and manual-only notes.
+2026-11-03. PRs #2 (core), #3 (desktop/icon) and #4 (state transitions) are merged.
+The current code baseline is `cc530f0`, including audit commit `3bb38cc`; PR #4's
+Windows and Ubuntu CI both passed. Schema 3, standalone desktop, five themes and
+userscript 0.1.1 are implemented. See [runtime state machines](docs/state-machines.md).
+
+Next work: [installation-friction roadmap](docs/installation-friction.md), with
+[cloud handoff](CLOUD_HANDOFF.md). An assisted owner Edge setup demonstrated actual
+capture, but the package still requires a separate manager/script install, pairing,
+listener start and inbox processing. Guided setup, managed capture and a dedicated
+companion are planned, not shipped. The remaining text records the earlier core
+implementation; its migration-2 references are historical.
 
 Current follow-through adds in-app export, scheduler controls, metadata/tag editing, opt-in userscript listener, transactional sessions and overlap-aware playback totals. Migration 2 preserves existing catalogues. See [current implementation and acceptance](docs/completion-20261103.md); this supersedes older unavailable-input and CLI-only statements below.
 

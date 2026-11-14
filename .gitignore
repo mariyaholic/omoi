@@ -4,3 +4,4 @@ __pycache__/
 ui/acceptance/
 ui/*verification.json
 docs/measurements/*.json
+.progress.md

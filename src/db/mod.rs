@@ -8,8 +8,21 @@ use serde::Serialize;
 use std::{path::Path, time::Duration};
 
 pub fn open(path: &Path, config: &Config, writable: bool) -> Result<Connection> {
+    open_mode(path, config, writable, writable)
+}
+
+pub fn open_existing_writable(path: &Path, config: &Config) -> Result<Connection> {
+    open_mode(path, config, true, false)
+}
+
+fn open_mode(path: &Path, config: &Config, writable: bool, create: bool) -> Result<Connection> {
     let flags = if writable {
-        OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_CREATE
+        OpenFlags::SQLITE_OPEN_READ_WRITE
+            | if create {
+                OpenFlags::SQLITE_OPEN_CREATE
+            } else {
+                OpenFlags::empty()
+            }
     } else {
         OpenFlags::SQLITE_OPEN_READ_ONLY
     };

@@ -42,7 +42,7 @@ impl PathEnvironment {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Paths {
     pub home: PathBuf,
     pub config: PathBuf,

@@ -1,3 +1,7 @@
+# Guided setup (0.2.0)
+
+Use Settings → Playback capture in Omoi for the managed listener, script export, explicit local credential copy and separate receipt/recording status. See [SETUP.md](../docs/SETUP.md). The dedicated Edge companion uses native messaging without token entry; its development registration and browser approval remain explicit. The instructions below retain the advanced manual CLI path. App updates do not update a manager-installed script; reimport the exported version.
+
 # Playback capture
 
 Capture is optional. Ordinary history imports continue to work without it.

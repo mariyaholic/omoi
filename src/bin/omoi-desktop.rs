@@ -15,7 +15,7 @@ fn main() {
                 core::PCWSTR,
                 Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK},
             };
-            let text: Vec<u16> = format!("Omoi could not open.\n\n{error}\n\nIf Omoi is already open, use its existing window.")
+            let text: Vec<u16> = format!("Omoi could not open.\n\n{error}\n\nIf Omoi is already open, use its existing window. If WebView2 is missing, install Microsoft Edge WebView2 Evergreen Runtime from Microsoft, then reopen Omoi. See SETUP.md.")
                 .encode_utf16().chain(Some(0)).collect();
             unsafe {
                 MessageBoxW(

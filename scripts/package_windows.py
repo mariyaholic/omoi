@@ -39,10 +39,14 @@ def main():
     tracked=subprocess.check_output(['git','ls-files','-z'],cwd=repo).decode().split('\0')
     assert 'docs/headless-acceptance-20261103.md' in tracked,'Track the acceptance record before packaging'
     content={}
-    for name in ('omoi.exe','omoiw.exe','omoi-desktop.exe','WebView2Loader.dll'):
+    for name in ('omoi.exe','omoiw.exe','omoi-desktop.exe','omoi-native.exe','WebView2Loader.dll'):
         content[name]=(args.bin_dir/name).read_bytes()
     for name in ('Run Omoi.cmd','Run Playback.cmd','README.md'):
         content[name]=(repo/'packaging'/name).read_bytes()
+    content['Register-OmoiHost.ps1']=(repo/'packaging/Register-OmoiHost.ps1').read_bytes()
+    content['SETUP.md']=(repo/'docs/SETUP.md').read_bytes()
+    for file in sorted((repo/'extension').glob('*')):
+        if file.is_file(): content['extension/'+file.name]=file.read_bytes()
     content['omoi.user.js']=(repo/'userscripts/omoi.user.js').read_bytes()
     content['Omoi.ico']=(repo/'assets/icon.ico').read_bytes()
     for name in tracked:

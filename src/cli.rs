@@ -15,6 +15,8 @@ struct Cli {
 enum Commands {
     /// Receive opt-in userscript playback events until stopped. Does not install a task.
     Listen,
+    #[command(hide = true)]
+    CollectScheduled,
     /// Open the local catalogue UI. Prints a private launch URL; exits after idle timeout.
     Ui {
         /// Launch the default browser after the local server starts.
@@ -77,6 +79,19 @@ enum Schedule {
 enum Database {
     Migrate,
     Info,
+    /// After backing up, select the historical offset for legacy Twitch queue dates.
+    MigratePlayback {
+        #[arg(long, allow_hyphen_values = true)]
+        utc_offset: String,
+        /// Preview only unless explicitly applying selected event IDs.
+        #[arg(long)]
+        apply: bool,
+        #[arg(long)]
+        event_id: Vec<String>,
+        /// Read-only preview cursor from the previous page.
+        #[arg(long, default_value_t = 0)]
+        after_id: i64,
+    },
 }
 pub fn run() -> u8 {
     run_from(std::env::args_os())
@@ -111,6 +126,25 @@ fn execute(cli: Cli) -> Result<u8> {
     let paths = Paths::resolve(&env)?;
     let mut config = Config::load(&paths.config)?;
     match cli.command {
+        Commands::CollectScheduled => {
+            let c = crate::db::open(&paths.db, &config, false)?;
+            let setup = crate::setup::Setup::load(&c)?;
+            if setup.profiles.is_empty() {
+                return Err(Error::Config(
+                    "Select profiles in Omoi Sources before enabling automatic collection".into(),
+                ));
+            }
+            drop(c);
+            let report = crate::collect::collect_selected(
+                &config,
+                &paths,
+                &env,
+                false,
+                Some(&setup.profiles),
+            )?;
+            output(&report)?;
+            return Ok(if report.profiles_failed > 0 { 3 } else { 0 });
+        }
         Commands::Listen => crate::listener::serve(paths)?,
         Commands::Ui {
             port,
@@ -201,6 +235,51 @@ fn execute(cli: Cli) -> Result<u8> {
         } => {
             let c = crate::db::open(&paths.db, &config, false)?;
             output(&crate::db::info(&c)?)?;
+        }
+        Commands::Db {
+            command:
+                Database::MigratePlayback {
+                    utc_offset,
+                    apply,
+                    event_id,
+                    after_id,
+                },
+        } => {
+            let migration = Config {
+                local_utc_offset: utc_offset,
+                ..Config::default()
+            };
+            let offset = migration.offset_seconds()?;
+            if apply && (event_id.is_empty() || after_id != 0) {
+                return Err(Error::Config(
+                    "Applying migration requires --event-id from preview and no --after-id".into(),
+                ));
+            }
+            if !apply && !event_id.is_empty() {
+                return Err(Error::Config(
+                    "--event-id requires --apply; omit it for the read-only preview".into(),
+                ));
+            }
+            let mut c = if apply {
+                crate::db::open_existing_writable(&paths.db, &config)?
+            } else {
+                crate::db::open(&paths.db, &config, false)?
+            };
+            if crate::db::info(&c)?.user_version != crate::db::schema::VERSION {
+                return Err(Error::Schema(
+                    "Migrate catalogue schema before playback timezone migration".into(),
+                ));
+            }
+            if apply {
+                let count = crate::sessionize::migrate_legacy_live(&mut c, offset, &event_id)?;
+                output(
+                    &serde_json::json!({"migrated_legacy_playback_events":count,"utc_offset":migration.local_utc_offset}),
+                )?;
+            } else {
+                output(&crate::sessionize::preview_legacy_live(
+                    &c, offset, after_id,
+                )?)?;
+            }
         }
         Commands::Export { json, out, .. } => {
             let c = crate::db::open(&paths.db, &config, false)?;

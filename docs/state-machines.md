@@ -162,3 +162,14 @@ Coverage does not establish every provider/ad/DRM variant, filesystem power-loss
 behavior, physical logon/battery transition, or Linux/Windows performance parity.
 Desktop close does not cancel an in-progress collection or scheduler subprocess;
 that work finishes before the worker joins.
+
+
+## Guided setup additions (implementation branch)
+
+The schema stays at 3. See [capture protocol](capture-protocol.md) for the new
+versioned setup checkpoint, generation-checked consent, per-home app lock, managed
+listener ownership, automatic bounded ingestion, native framing/negotiation,
+serialized MV3 queue, and explicit registration/repair transitions. Existing
+capture accounting and deletion invariants above remain. Sources automation now
+persists selected profile IDs; the helper fails closed without saved scope.
+The manual CLI listener still exists; the UI owns only its managed listener.

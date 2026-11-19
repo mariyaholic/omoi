@@ -5,3 +5,4 @@ ui/acceptance/
 ui/*verification.json
 docs/measurements/*.json
 .progress.md
+.ferry_lacus_cache/

@@ -1,3 +1,9 @@
+<!-- encore:sim -->
+# Learnings (Encore SIM Memory, ADR-0071)
+
+New entries follow the Structured Incident Memory schema (`arXiv:2611.18856v1`):
+`Area` (`skills|video|deploy|design|state-machines|delegation|cli|security|data`), `Problem cluster`, `Root cause`, `Rationale`, `Predicted vs observed`, and `Provenance`.
+
 # Implementation learnings
 
 - 2026-11-03: Task Scheduler COM receives a UTF-16 BSTR. Declaring UTF-8 in that XML causes registration to fail even when the intermediate file decodes correctly. Omit the encoding declaration and verify actual isolated registration, not only XML strings. Token ACL setup uses the .NET access-control API directly because PowerShell Security module autoload can fail under isolated profile environment roots.
